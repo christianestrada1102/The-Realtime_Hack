@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/tts-1",
+      model: "openai/gpt-4o-mini-tts-2025-12-15",
       input: text,
-      voice: "nova",
+      voice: "alloy",
       response_format: "mp3",
     }),
   });
