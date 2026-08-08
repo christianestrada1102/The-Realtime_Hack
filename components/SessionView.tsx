@@ -1,37 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useChannel } from "@portalsdk/react";
+import { useState } from "react";
 
-type ConnectionStatus = "idle" | "connecting" | "connected" | "error";
+type ChatContent = { text: string };
 
 export function SessionView({ sessionId }: { sessionId: string }) {
-  const [status, setStatus] = useState<ConnectionStatus>("idle");
-  const [log, setLog] = useState<string[]>([]);
+  const channelId = `session-${sessionId}`;
+  const { messages, send, status } = useChannel<ChatContent>({ channelId });
+  const [draft, setDraft] = useState("");
 
-  const addLog = (msg: string) =>
-    setLog((prev) => [...prev, `[${new Date().toISOString()}] ${msg}`]);
-
-  async function connect() {
-    setStatus("connecting");
-    addLog("Iniciando conexión con Portal...");
-
-    try {
-      const res = await fetch("/api/session/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-      addLog(`Sesión creada: ${data.sessionId}`);
-      setStatus("connected");
-    } catch (err) {
-      addLog(`Error: ${err instanceof Error ? err.message : String(err)}`);
-      setStatus("error");
-    }
+  function handleSend() {
+    const text = draft.trim();
+    if (!text) return;
+    send({ content: { text } });
+    setDraft("");
   }
+
+  const connected = status === "ready";
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
@@ -40,11 +26,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       <div className="flex items-center gap-2">
         <span
           className={`w-3 h-3 rounded-full ${
-            status === "connected"
+            connected
               ? "bg-green-400"
-              : status === "connecting"
+              : status === "connecting" || status === "reconnecting"
               ? "bg-yellow-400 animate-pulse"
-              : status === "error"
+              : status === "blocked"
               ? "bg-red-400"
               : "bg-zinc-600"
           }`}
@@ -52,34 +38,41 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         <span className="text-sm text-zinc-400 capitalize">{status}</span>
       </div>
 
-      {status === "idle" && (
-        <button
-          onClick={connect}
-          className="px-6 py-3 bg-zinc-100 text-zinc-950 rounded-lg font-medium hover:bg-white transition-colors"
-        >
-          Conectar canal Portal
-        </button>
-      )}
+      <div className="w-full max-w-lg bg-zinc-900 rounded-lg p-4 min-h-48 flex flex-col gap-2 overflow-y-auto">
+        {messages.length === 0 ? (
+          <p className="text-zinc-600 text-sm text-center my-auto">
+            Canal {channelId} — esperando mensajes…
+          </p>
+        ) : (
+          messages.map((m) => (
+            <div key={m.id} className="text-sm">
+              <span className="text-zinc-500 font-mono mr-2">
+                {m.sender.anon ? "anon" : m.sender.id}:
+              </span>
+              <span>{m.content.text}</span>
+            </div>
+          ))
+        )}
+      </div>
 
-      {status === "error" && (
+      <div className="flex w-full max-w-lg gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          placeholder="Escribe un mensaje…"
+          className="flex-1 bg-zinc-800 rounded-lg px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-zinc-600 placeholder:text-zinc-600"
+        />
         <button
-          onClick={() => {
-            setStatus("idle");
-            setLog([]);
-          }}
-          className="px-4 py-2 border border-zinc-700 rounded-lg text-sm hover:border-zinc-500 transition-colors"
+          onClick={handleSend}
+          disabled={!draft.trim() || !connected}
+          className="px-4 py-2 bg-zinc-100 text-zinc-950 rounded-lg text-sm font-medium disabled:opacity-40 hover:bg-white transition-colors"
         >
-          Reintentar
+          Enviar
         </button>
-      )}
+      </div>
 
-      {log.length > 0 && (
-        <div className="w-full max-w-lg bg-zinc-900 rounded-lg p-4 font-mono text-xs text-zinc-400 space-y-1">
-          {log.map((line, i) => (
-            <p key={i}>{line}</p>
-          ))}
-        </div>
-      )}
+      <p className="text-xs text-zinc-600 font-mono">channel: {channelId}</p>
     </main>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PortalClientProvider } from "@/components/PortalClientProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -6,14 +7,12 @@ export const metadata: Metadata = {
   description: "Simulador de entrevistas técnicas con presión real",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body className="bg-zinc-950 text-zinc-100 antialiased">{children}</body>
+      <body className="bg-zinc-950 text-zinc-100 antialiased">
+        <PortalClientProvider>{children}</PortalClientProvider>
+      </body>
     </html>
   );
 }
