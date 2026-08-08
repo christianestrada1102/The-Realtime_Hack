@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
   const outForm = new FormData();
   outForm.append("file", audio, "audio.webm");
   outForm.append("model", "openai/whisper-large-v3");
+  outForm.append("language", "es");
 
   const res = await fetch("https://openrouter.ai/api/v1/audio/transcriptions", {
     method: "POST",
