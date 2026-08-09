@@ -432,12 +432,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           </div>
         ) : showEditor ? (
           <div style={{
-            width: "100%", maxWidth: isMobile ? "100%" : 640,
-            border: isMobile ? "none" : "1px solid #222",
-            borderRadius: isMobile ? 0 : 8,
+            width: "100%", maxWidth: 640,
+            border: "1px solid #222",
+            borderRadius: 8,
             backgroundColor: "#0d0d0d",
             display: "flex", flexDirection: "column", overflow: "hidden",
-            ...(isMobile ? { position: "fixed", inset: 0, zIndex: 25, paddingTop: 48 } : {}),
           }}>
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -459,7 +458,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                 cerrar
               </button>
             </div>
-            <div style={{ height: isMobile ? "calc(100vh - 100px)" : 160 }}>
+            <div style={{ height: 160 }}>
               <CodeEditor value={codeValue} onChange={setCodeValue} />
             </div>
           </div>
