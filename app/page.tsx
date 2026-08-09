@@ -1,32 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { GlobeLite } from "@/components/GlobeLite";
 
 const ChromaticWaves = dynamic(
   () => import("@/components/originkit/chromatic-waves"),
   { ssr: false, loading: () => null }
 );
-const Globe = dynamic(
-  () => import("@/components/originkit/globe"),
-  { ssr: false, loading: () => <div style={{ width: "100%", height: "100%" }} /> }
-);
-
-const GlobeMemo = memo(function GlobeMemo() {
-  return (
-    <Globe
-      speed={1.5}
-      scale={8}
-      oceanColor="#0a0a0a"
-      outlineColor="#2a2a2a"
-      showOutline={true}
-      showGrid={false}
-      dots={{ color: "#ffffff", size: 2.5, density: 9, allDots: false }}
-      style={{ width: "100%", height: "100%" }}
-    />
-  );
-});
 
 const DURATIONS = [
   { label: "30 min", value: 30 },
@@ -76,9 +58,7 @@ export default function Home() {
   const loadingRef = useRef<HTMLDivElement>(null);
 
   const heroSentinelRef = useRef<HTMLDivElement>(null);
-  const globeSentinelRef = useRef<HTMLDivElement>(null);
   const heroInView = useInView(heroSentinelRef, "0px");
-  const globeInView = useInView(globeSentinelRef, "300px");
 
   const heroTitleRef   = useRef<HTMLHeadingElement>(null);
   const heroSubRef     = useRef<HTMLParagraphElement>(null);
@@ -432,8 +412,8 @@ export default function Home() {
             </span>
           </div>
 
-          <div ref={globeSentinelRef} style={{ width: 450, height: 450, maxWidth: "90vw", maxHeight: "90vw", position: "relative", flexShrink: 0 }}>
-            {globeInView && <GlobeMemo />}
+          <div style={{ flexShrink: 0 }}>
+            <GlobeLite size={420} dotColor="#ffffff" dotSize={1.8} dotDensity={700} speed={0.003} />
           </div>
         </section>
 
