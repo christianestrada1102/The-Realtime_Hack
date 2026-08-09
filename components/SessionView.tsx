@@ -8,7 +8,7 @@ import { FeedbackScreen } from "./FeedbackScreen";
 import { useVoiceRecorder } from "@/lib/useVoiceRecorder";
 import { useAudioPlayer } from "@/lib/useAudioPlayer";
 import { useSilenceDetector } from "@/lib/useSilenceDetector";
-import { useIsMobile } from "@/lib/useIsMobile";
+import { useBreakpoint } from "@/lib/useIsMobile";
 
 const CodeEditor = dynamic(() => import("./CodeEditor").then((m) => m.CodeEditor), { ssr: false });
 
@@ -46,7 +46,8 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const [codeValue, setCodeValue] = useState("// Escribe tu solución aquí\n");
   const [waveformBars, setWaveformBars] = useState<number[]>([4, 4, 4, 4, 4]);
   const [showFeedback, setShowFeedback] = useState(false);
-  const isMobile = useIsMobile();
+  const bp = useBreakpoint();
+  const isMobile = bp === "mobile";
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
@@ -341,7 +342,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         borderBottom: "1px solid #1a1a1a",
         position: "relative",
       }}>
-        <div style={{ position: "relative", width: isMobile ? 80 : 120, height: isMobile ? 80 : 120 }}>
+        <div style={{ position: "relative", width: isMobile ? 80 : bp === "tablet" ? 100 : 120, height: isMobile ? 80 : bp === "tablet" ? 100 : 120 }}>
           {(isSpeaking || isListening) && (
             <div style={{
               position: "absolute", inset: -8, borderRadius: "50%",
@@ -350,11 +351,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             }} />
           )}
           <div style={{
-            width: isMobile ? 80 : 120, height: isMobile ? 80 : 120, borderRadius: "50%",
+            width: isMobile ? 80 : bp === "tablet" ? 100 : 120, height: isMobile ? 80 : bp === "tablet" ? 100 : 120, borderRadius: "50%",
             backgroundColor: "#1a1a1a", border: "1px solid #333",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <span style={{ fontFamily: "Manuscribe, serif", fontSize: isMobile ? 32 : 48, color: "#fff", lineHeight: 1, userSelect: "none" }}>
+            <span style={{ fontFamily: "Manuscribe, serif", fontSize: isMobile ? 32 : bp === "tablet" ? 40 : 48, color: "#fff", lineHeight: 1, userSelect: "none" }}>
               A
             </span>
           </div>

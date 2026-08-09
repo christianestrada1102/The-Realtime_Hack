@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
-import { useIsMobile } from "@/lib/useIsMobile";
+import { useBreakpoint } from "@/lib/useIsMobile";
 import dynamic from "next/dynamic";
 
 const ChromaticWaves = dynamic(
@@ -85,7 +85,9 @@ function useInView(ref: React.RefObject<Element | null>, rootMargin = "200px") {
 
 export default function Home() {
   const router = useRouter();
-  const isMobile = useIsMobile();
+  const bp = useBreakpoint();
+  const isMobile = bp === "mobile";
+  const isTablet = bp === "tablet";
   const [duration, setDuration] = useState(45);
   const [modalOpen, setModalOpen] = useState(false);
   const [loadingVisible, setLoadingVisible] = useState(true);
@@ -339,7 +341,7 @@ export default function Home() {
         }}>
           <div ref={heroSentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
             {heroInView && (
-              <div style={{ position: "absolute", inset: 0, opacity: isMobile ? 0.08 : 0.12, overflow: "hidden" }}>
+              <div style={{ position: "absolute", inset: 0, opacity: isMobile ? 0.08 : 0.15, overflow: "hidden" }}>
                 <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
               </div>
             )}
@@ -418,7 +420,7 @@ export default function Home() {
 
           <div ref={problemColsRef} style={{
             display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",  // tablet & desktop: 3 cols
             gap: 0, maxWidth: 560, width: "100%",
           }}>
             {["Interrupciones reales", "Presion de tiempo", "Feedback inmediato"].map((label, i, arr) => (
@@ -440,7 +442,7 @@ export default function Home() {
           flexDirection: isMobile ? "column" : "row",
           alignItems: "center", justifyContent: "center",
           padding: isMobile ? "60px 24px" : "80px 24px",
-          gap: isMobile ? 40 : 64, opacity: 0,
+          gap: isMobile ? 40 : isTablet ? 48 : 64, opacity: 0,
           borderTop: `1px solid ${C.borderLo}`,
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 32, width: isMobile ? "100%" : undefined, maxWidth: 280, textAlign: isMobile ? "center" : "left" }}>
@@ -467,8 +469,8 @@ export default function Home() {
           <div
             ref={globeSentinelRef}
             style={{
-              width: isMobile ? 280 : 450,
-              height: isMobile ? 280 : 450,
+              width: isMobile ? 280 : isTablet ? 350 : 450,
+              height: isMobile ? 280 : isTablet ? 350 : 450,
               flexShrink: 0,
               margin: isMobile ? "0 auto" : undefined,
             }}
@@ -489,7 +491,7 @@ export default function Home() {
             ref={howSectionRef}
             style={isMobile
               ? { display: "flex", flexDirection: "column", width: "100%", maxWidth: 400 }
-              : { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, maxWidth: 760, width: "100%" }
+              : { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0, maxWidth: 760, width: "100%" }
             }
           >
             {(isMobile

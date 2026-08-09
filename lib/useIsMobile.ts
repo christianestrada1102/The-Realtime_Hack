@@ -12,3 +12,19 @@ export function useIsMobile(breakpoint = 768) {
   }, [breakpoint]);
   return mobile;
 }
+
+export type Breakpoint = "mobile" | "tablet" | "desktop";
+
+export function useBreakpoint(): Breakpoint {
+  const [bp, setBp] = useState<Breakpoint>("desktop");
+  useEffect(() => {
+    const check = () => {
+      const w = window.innerWidth;
+      setBp(w < 768 ? "mobile" : w < 1024 ? "tablet" : "desktop");
+    };
+    check();
+    window.addEventListener("resize", check, { passive: true });
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  return bp;
+}
