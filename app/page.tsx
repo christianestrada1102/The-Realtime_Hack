@@ -339,12 +339,9 @@ export default function Home() {
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", overflow: "hidden",
         }}>
-          <div ref={heroSentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            {heroInView && (
-              <div style={{ position: "absolute", inset: 0, opacity: isMobile ? 0.08 : 0.15, overflow: "hidden" }}>
-                <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
-              </div>
-            )}
+          {/* TEST: ChromaticWaves directo, sin wrapper condicional */}
+          <div ref={heroSentinelRef} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", opacity: 0.15, zIndex: 0, pointerEvents: "none" }}>
+            <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
           </div>
 
           <div style={{ position: "relative", zIndex: 1, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
