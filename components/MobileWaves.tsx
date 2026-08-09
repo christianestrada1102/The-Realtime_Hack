@@ -20,25 +20,32 @@ export default function MobileWaves() {
     resize()
     window.addEventListener('resize', resize)
 
-    const CELL = 24
+    const CELL = 18
+
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const cols = Math.ceil(canvas.width / CELL)
-      const rows = Math.ceil(canvas.height / CELL)
+      const cols = Math.ceil(canvas.width / CELL) + 1
+      const rows = Math.ceil(canvas.height / CELL) + 1
 
       for (let i = 0; i < cols; i++) {
         for (let j = 0; j < rows; j++) {
-          const x = i * CELL + CELL / 2
-          const y = j * CELL + CELL / 2
-          const noise = Math.sin(i * 0.3 + t) * Math.cos(j * 0.3 + t * 0.7)
-          const radius = Math.max(0.5, (noise + 1) * 2.5)
+          const x = i * CELL
+          const y = j * CELL
+
+          const wave1 = Math.sin(i * 0.4 + t * 1.2)
+          const wave2 = Math.cos(j * 0.4 + t * 0.8)
+          const wave3 = Math.sin((i + j) * 0.25 + t * 0.6)
+          const combined = (wave1 + wave2 + wave3) / 3
+
+          const radius = Math.max(0.3, ((combined + 1) / 2) * 3.5)
+
           ctx.beginPath()
           ctx.arc(x, y, radius, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(255,255,255,0.15)`
+          ctx.fillStyle = `rgba(200,200,200,0.25)`
           ctx.fill()
         }
       }
-      t += 0.02
+      t += 0.015
       animId = requestAnimationFrame(draw)
     }
     draw()
@@ -60,7 +67,7 @@ export default function MobileWaves() {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.4,
+        opacity: 0.5,
       }}
     />
   )
