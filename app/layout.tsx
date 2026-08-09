@@ -6,6 +6,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Poised",
   description: "Simulador de entrevistas técnicas con presión real",
+  icons: {
+    icon: "/Assets/images/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
