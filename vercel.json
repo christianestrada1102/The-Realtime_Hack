@@ -11,5 +11,8 @@
       "source": "/api/(.*)",
       "headers": [{ "key": "x-api-route", "value": "true" }]
     }
+  ],
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/" }
   ]
 }
