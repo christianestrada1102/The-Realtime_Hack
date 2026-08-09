@@ -91,18 +91,18 @@ export function SessionView({ sessionId }: { sessionId: string }) {
 
       if (left <= 300 && !warned5MinRef.current) {
         warned5MinRef.current = true;
-        const msg = "Por cierto, nos quedan unos 5 minutos — vamos terminando.";
+        const msg = "Oye, nos quedan unos 5 minutos. Vamos cerrando — ¿tienes alguna pregunta sobre el rol o el equipo?";
         send({ content: { text: msg, role: "interviewer" } });
         appendHistory({ role: "interviewer", content: msg });
         setLastInterviewerMsg(msg);
         setMsgKey((k) => k + 1);
-        speak(msg);
+        speak(msg, () => startListeningRef.current());
       }
 
       if (left === 0 && !timeUpRef.current) {
         timeUpRef.current = true;
         clearInterval(t);
-        const closing = "Bien, hemos llegado al final del tiempo. Ha sido una buena conversación — te contactaremos con los resultados. Gracias por tu tiempo.";
+        const closing = "Perfecto, se nos acabó el tiempo. Fue una buena sesión — revisaremos todo y te avisamos. Gracias.";
         send({ content: { text: closing, role: "interviewer" } });
         appendHistory({ role: "interviewer", content: closing });
         setLastInterviewerMsg(closing);

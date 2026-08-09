@@ -135,12 +135,48 @@ export function FeedbackScreen({ history }: Props) {
               </div>
             </div>
 
+            {/* Code Review */}
+            {feedback.codeReview && (
+              <div style={{ ...useFadeIn(2, visible), borderTop: "1px solid #1a1a1a", paddingTop: 32 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", margin: 0 }}>
+                    ejercicio de código
+                  </p>
+                  <span style={{
+                    fontFamily: "monospace", fontSize: 10,
+                    padding: "2px 8px", borderRadius: 4,
+                    border: `1px solid ${feedback.codeReview.verdict === "correcto" ? "#fff" : feedback.codeReview.verdict === "parcial" ? "#888" : "#ef4444"}`,
+                    color: feedback.codeReview.verdict === "correcto" ? "#fff" : feedback.codeReview.verdict === "parcial" ? "#888" : "#ef4444",
+                  }}>
+                    {feedback.codeReview.verdict}
+                  </span>
+                </div>
+                <p style={{ fontFamily: "monospace", fontSize: 11, color: "#444", marginBottom: 20, lineHeight: 1.6 }}>
+                  {feedback.codeReview.problem}
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div>
+                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 6 }}>lo que funcionó</p>
+                    <p style={{ fontFamily: "monospace", fontSize: 12, color: "#e4e4e7", lineHeight: 1.7, margin: 0 }}>{feedback.codeReview.what_worked}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 6 }}>qué mejorar</p>
+                    <p style={{ fontFamily: "monospace", fontSize: 12, color: "#71717a", lineHeight: 1.7, margin: 0 }}>{feedback.codeReview.what_to_improve}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 6 }}>complejidad</p>
+                    <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555", lineHeight: 1.7, margin: 0 }}>{feedback.codeReview.complexity}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Strengths + Weaknesses */}
             <div style={{
               display: "grid",
               gridTemplateColumns: isMobile ? "1fr" : bp === "tablet" ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(220px, 1fr))",
               gap: isMobile ? 24 : 32,
-              ...useFadeIn(2, visible),
+              ...useFadeIn(3, visible),
             }}>
               <div>
                 <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginBottom: 12 }}>
@@ -169,7 +205,7 @@ export function FeedbackScreen({ history }: Props) {
             </div>
 
             {/* Recommendation */}
-            <div style={{ ...useFadeIn(3, visible), borderTop: "1px solid #1a1a1a", paddingTop: 32 }}>
+            <div style={{ ...useFadeIn(4, visible), borderTop: "1px solid #1a1a1a", paddingTop: 32 }}>
               <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginBottom: 12 }}>
                 proximos pasos
               </p>
@@ -179,7 +215,7 @@ export function FeedbackScreen({ history }: Props) {
             </div>
 
             {/* CTA */}
-            <div style={{ ...useFadeIn(4, visible), textAlign: "center", paddingTop: 16 }}>
+            <div style={{ ...useFadeIn(5, visible), textAlign: "center", paddingTop: 16 }}>
               <button
                 onClick={() => router.push("/")}
                 style={{

@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 const SYSTEM_PROMPT = `Analiza esta entrevista técnica y genera un feedback estructurado en JSON.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown.
 
+Si en la transcripción aparece [CÓDIGO ENVIADO] seguido de código, evalúa ese código específicamente.
+
 {
   "score": número del 1 al 10,
   "summary": "Una oración resumiendo el desempeño general",
@@ -11,8 +13,17 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown.
   "topics": [
     { "name": "nombre del tema", "level": "strong" | "weak" | "medium" }
   ],
-  "recommendation": "Un párrafo concreto de qué estudiar y cómo mejorar"
-}`;
+  "codeReview": null | {
+    "problem": "descripción breve del problema que se pidió resolver",
+    "verdict": "correcto" | "parcial" | "incorrecto",
+    "what_worked": "qué hizo bien en el código",
+    "what_to_improve": "qué mejorar: edge cases, complejidad, legibilidad, etc.",
+    "complexity": "O(n) — explica brevemente por qué"
+  },
+  "recommendation": "Un párrafo concreto de qué estudiar y cómo mejorar para la próxima entrevista"
+}
+
+Si no hubo ejercicio de código, pon codeReview: null.`;
 
 export type FeedbackData = {
   score: number;
@@ -20,6 +31,13 @@ export type FeedbackData = {
   strengths: string[];
   weaknesses: string[];
   topics: Array<{ name: string; level: "strong" | "medium" | "weak" }>;
+  codeReview: {
+    problem: string;
+    verdict: "correcto" | "parcial" | "incorrecto";
+    what_worked: string;
+    what_to_improve: string;
+    complexity: string;
+  } | null;
   recommendation: string;
 };
 
