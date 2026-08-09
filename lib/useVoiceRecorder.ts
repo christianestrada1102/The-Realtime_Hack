@@ -18,14 +18,15 @@ export function useVoiceRecorder() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const resolveRef = useRef<((blob: Blob) => void) | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  async function startRecording() {
+  async function startRecording(): Promise<MediaStream | null> {
     setError(null);
 
     const mime = getSupportedMime();
     if (!mime) {
       setError("Tu navegador no soporta grabación de audio (MediaRecorder no disponible).");
-      return;
+      return null;
     }
 
     let stream: MediaStream;
@@ -33,9 +34,10 @@ export function useVoiceRecorder() {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
       setError("Permiso de micrófono denegado.");
-      return;
+      return null;
     }
 
+    streamRef.current = stream;
     chunksRef.current = [];
     const recorder = new MediaRecorder(stream, { mimeType: mime });
     recorderRef.current = recorder;
@@ -46,6 +48,7 @@ export function useVoiceRecorder() {
 
     recorder.onstop = () => {
       stream.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
       const blob = new Blob(chunksRef.current, { type: mime });
       resolveRef.current?.(blob);
       resolveRef.current = null;
@@ -53,6 +56,7 @@ export function useVoiceRecorder() {
 
     recorder.start();
     setIsRecording(true);
+    return stream;
   }
 
   function stopRecording(): Promise<Blob> {
@@ -63,5 +67,11 @@ export function useVoiceRecorder() {
     });
   }
 
-  return { startRecording, stopRecording, isRecording, error };
+  function cancelRecording() {
+    resolveRef.current = null;
+    recorderRef.current?.stop();
+    setIsRecording(false);
+  }
+
+  return { startRecording, stopRecording, cancelRecording, isRecording, error };
 }

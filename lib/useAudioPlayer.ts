@@ -1,13 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export function useAudioPlayer() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  async function speak(text: string) {
-    // Stop any ongoing playback
+  const speak = useCallback(async (text: string, onEnded?: () => void) => {
+    console.log("speak called with:", text.slice(0, 30));
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -23,6 +23,7 @@ export function useAudioPlayer() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         console.error("[useAudioPlayer] speak failed:", data.error ?? res.status);
+        onEnded?.();
         return;
       }
 
@@ -37,6 +38,7 @@ export function useAudioPlayer() {
         URL.revokeObjectURL(url);
         audioRef.current = null;
         setIsSpeaking(false);
+        onEnded?.();
       };
 
       audio.onerror = () => {
@@ -44,14 +46,16 @@ export function useAudioPlayer() {
         audioRef.current = null;
         setIsSpeaking(false);
         console.error("[useAudioPlayer] Audio playback error");
+        onEnded?.();
       };
 
       await audio.play();
     } catch (err) {
       setIsSpeaking(false);
       console.error("[useAudioPlayer] speak error:", err);
+      onEnded?.();
     }
-  }
+  }, []);
 
   return { speak, isSpeaking };
 }

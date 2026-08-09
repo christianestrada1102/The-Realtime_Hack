@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: 'Manuscribe';
+  src: url('/Assets/Fonts/ManuscribeFree-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Manuscribe', system-ui, sans-serif;
+}
+
+body {
+  font-family: 'Manuscribe', system-ui, sans-serif;
+}

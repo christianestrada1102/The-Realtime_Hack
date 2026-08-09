@@ -18,8 +18,9 @@ export async function POST(req: NextRequest) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "fish-audio/s2.1-pro-free:free",
+      model: "x-ai/grok-voice-tts-1.0",
       input: text,
+      voice: "Eve",
       response_format: "mp3",
     }),
   });
