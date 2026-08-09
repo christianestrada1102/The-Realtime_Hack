@@ -66,12 +66,12 @@ export async function POST(req: NextRequest) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "anthropic/claude-haiku-4-5",
+      model: "anthropic/claude-sonnet-4-5",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Transcripción de la entrevista:\n\n${transcript}` },
       ],
-      max_tokens: 800,
+      max_tokens: 1200,
       temperature: 0.3,
     }),
   });
@@ -87,12 +87,36 @@ export async function POST(req: NextRequest) {
 
   let feedback: FeedbackData;
   try {
-    // Strip any accidental markdown fences
-    const clean = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+    // Strip markdown fences and extract first JSON object
+    let clean = raw.replace(/^```(?:json)?\s*/im, "").replace(/\s*```\s*$/m, "").trim();
+    // If model added text before/after the JSON, extract just the object
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (jsonMatch) clean = jsonMatch[0];
     feedback = JSON.parse(clean);
   } catch {
     console.error("[feedback] Failed to parse JSON:", raw);
-    return NextResponse.json({ error: "Invalid JSON from model", raw }, { status: 502 });
+    // Retry with a stricter prompt asking only for JSON
+    const retryRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "anthropic/claude-sonnet-4-5",
+        messages: [
+          { role: "system", content: "Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni markdown." },
+          { role: "user", content: `Basándote en esta transcripción de entrevista técnica, genera este JSON exacto:\n{"score":número,"summary":"string","strengths":["..."],"weaknesses":["..."],"topics":[{"name":"...","level":"strong|medium|weak"}],"codeReview":null,"recommendation":"string"}\n\nTranscripción:\n${transcript}` },
+        ],
+        max_tokens: 1000,
+        temperature: 0.1,
+      }),
+    });
+    const retryData = await retryRes.json();
+    const retryRaw: string = retryData.choices?.[0]?.message?.content?.trim() ?? "";
+    try {
+      const m = retryRaw.match(/\{[\s\S]*\}/);
+      feedback = JSON.parse(m ? m[0] : retryRaw);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON from model", raw }, { status: 502 });
+    }
   }
 
   return NextResponse.json(feedback);

@@ -69,16 +69,16 @@ export function FeedbackScreen({ history }: Props) {
 
         {/* Poised wordmark */}
         <p style={{
-          fontFamily: "Manuscribe, serif", fontSize: 14, color: "#333",
-          textAlign: "center", marginBottom: 8,
+          fontFamily: "Manuscribe, serif", fontSize: 32, color: "#fff",
+          textAlign: "center", marginBottom: 4,
         }}>
           Poised
         </p>
         <p style={{
           fontFamily: "monospace", fontSize: 11, color: "#555",
-          textAlign: "center", marginBottom: 48,
+          textAlign: "center", marginBottom: 48, letterSpacing: "0.08em",
         }}>
-          Resultado de tu entrevista
+          resultado de tu entrevista
         </p>
 
         {/* Loading */}

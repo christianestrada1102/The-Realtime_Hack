@@ -27,12 +27,27 @@ Elige la dificultad según cómo respondió en fase 2: si fue sólido, nivel med
 Di exactamente esto al presentarlo:
 "Okay, pasemos a código. Tienes el editor disponible. [Describe el problema con input y output exactos en 2-3 oraciones]. Tómate el tiempo que necesites y dime cuando termines."
 
-**Problemas que puedes usar (elige uno):**
-- Fácil: "Escribe una función que reciba un array de números y retorne el segundo número más grande. Si no existe, retorna null. Ejemplo: [3,1,4,1,5] → 4"
-- Fácil: "Dada una cadena, retorna true si es un palíndromo ignorando espacios y mayúsculas. Ejemplo: 'A man a plan a canal Panama' → true"
-- Medio: "Escribe una función que reciba un array de enteros y retorne todos los pares que sumen un target dado. Ejemplo: ([2,7,11,15], 9) → [[2,7]]"
-- Medio: "Implementa una función que aplane un array anidado de cualquier profundidad. Ejemplo: [1,[2,[3,[4]]],5] → [1,2,3,4,5]"
-- Medio: "Dado un string con paréntesis, corchetes y llaves, retorna true si están correctamente balanceados. Ejemplo: '{[()]}' → true, '{[(])}' → false"
+**Problemas que puedes usar (elige uno según el nivel del candidato):**
+
+Fácil A — segundo mayor:
+"Okay, pasemos a código. Tienes el editor disponible. Completa la función para que retorne el segundo número más grande del array. Si no existe, retorna null. Ejemplo: [3,1,4,1,5] → 4. Ya tienes el esqueleto."
+Skeleton: function secondLargest(arr) {\n  // tu código aquí\n}
+
+Fácil B — palíndromo:
+"Okay, pasemos a código. Tienes el editor disponible. Completa la función isPalindrome — retorna true si la cadena es palíndromo ignorando espacios y mayúsculas. Ejemplo: 'A man a plan a canal Panama' → true."
+Skeleton: function isPalindrome(str) {\n  // tu código aquí\n}
+
+Medio A — dos sumas:
+"Okay, pasemos a código. Tienes el editor disponible. Completa twoSum — dado un array y un target, retorna todos los pares de números que sumen ese target. Ejemplo: ([2,7,11,15], 9) → [[2,7]]."
+Skeleton: function twoSum(nums, target) {\n  // tu código aquí\n}
+
+Medio B — flatten:
+"Okay, pasemos a código. Tienes el editor disponible. Implementa flatten — aplana un array anidado de cualquier profundidad. Ejemplo: [1,[2,[3,[4]]],5] → [1,2,3,4,5]."
+Skeleton: function flatten(arr) {\n  // tu código aquí\n}
+
+Medio C — paréntesis balanceados:
+"Okay, pasemos a código. Tienes el editor disponible. Completa isBalanced — retorna true si los paréntesis, corchetes y llaves están balanceados. Ejemplo: '{[()]}' → true."
+Skeleton: function isBalanced(str) {\n  // tu código aquí\n}
 
 **Cuando el candidato envía código ([CÓDIGO ENVIADO]):**
 1. Lee el código que viene en el mensaje
@@ -112,9 +127,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Empty response from model" }, { status: 502 });
   }
 
-  const codeKeywords = /implementa|escribe|código|función|codifica|tienes el editor|pasemos a código|resuelve|retorna|retorne|input.*output|array.*función|función.*array/i;
+  // Only open editor when Ana explicitly gives a coding challenge
+  const codeKeywords = /tienes el editor|pasemos a código|escribe una función|escribe el código|implementa una función|escribe un programa/i;
   const showEditor = codeKeywords.test(response);
 
+  // Detect which skeleton to send based on the problem Ana chose
+  let starterCode: string | null = null;
+  if (showEditor) {
+    if (/secondLargest|segundo.*mayor|segundo.*grande/i.test(response))
+      starterCode = "function secondLargest(arr) {\n  // tu código aquí\n}";
+    else if (/isPalindrome|palíndromo/i.test(response))
+      starterCode = "function isPalindrome(str) {\n  // tu código aquí\n}";
+    else if (/twoSum|dos.*suma|pares.*sumen/i.test(response))
+      starterCode = "function twoSum(nums, target) {\n  // tu código aquí\n}";
+    else if (/flatten|aplana/i.test(response))
+      starterCode = "function flatten(arr) {\n  // tu código aquí\n}";
+    else if (/isBalanced|balanceados|paréntesis/i.test(response))
+      starterCode = "function isBalanced(str) {\n  // tu código aquí\n}";
+    else
+      starterCode = "// tu código aquí\n";
+  }
+
   console.log(`[interview] Response: ${response.slice(0, 80)}… showEditor=${showEditor}`);
-  return NextResponse.json({ response, showEditor });
+  return NextResponse.json({ response, showEditor, starterCode });
 }

@@ -150,7 +150,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       }
       const reply: string = iData.response;
       // Fix 2 — auto-open editor when reply contains code keywords
-      if (iData.showEditor || CODE_KEYWORDS.test(reply)) setShowEditor(true);
+      if (iData.showEditor || CODE_KEYWORDS.test(reply)) {
+        setShowEditor(true);
+        if (iData.starterCode) setCodeValue(iData.starterCode);
+      }
       await send({ content: { text: reply, role: "interviewer" } });
       appendHistory({ role: "interviewer", content: reply });
       setLastInterviewerMsg(reply);
