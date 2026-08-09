@@ -371,7 +371,8 @@ export default function Home() {
               onClick={(e) => {
                 const btn = e.currentTarget;
                 btn.style.transform = "scale(0.97)";
-                setTimeout(() => { btn.style.transform = "scale(1)"; setModalOpen(true); }, 100);
+                setModalOpen(true);
+                setTimeout(() => { btn.style.transform = "scale(1)"; }, 100);
               }}
               style={{
                 background: "none", border: "1px solid #333", borderRadius: 4,
@@ -701,6 +702,14 @@ export default function Home() {
         </footer>
 
         <style>{`
+          @keyframes modal-bg-in {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+          }
+          @keyframes modal-in {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+          }
           @keyframes drift {
             0%, 100% { background-position: 0 0; }
             50% { background-position: 12px 12px; }
@@ -735,6 +744,7 @@ export default function Home() {
             display: "flex", alignItems: "center", justifyContent: "center",
             backgroundColor: "rgba(0,0,0,0.65)",
             backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            animation: "modal-bg-in 0.15s ease",
           }}
         >
           <div
@@ -744,6 +754,7 @@ export default function Home() {
               borderRadius: 8, padding: isMobile ? 28 : 40,
               display: "flex", flexDirection: "column", alignItems: "center", gap: 28,
               position: "relative", minWidth: isMobile ? "calc(100vw - 48px)" : 300,
+              animation: "modal-in 0.15s ease",
             }}
           >
             <button
