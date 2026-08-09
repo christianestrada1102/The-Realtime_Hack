@@ -1,14 +1,48 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { GlobeLite } from "@/components/GlobeLite";
 
 const ChromaticWaves = dynamic(
   () => import("@/components/originkit/chromatic-waves"),
   { ssr: false, loading: () => null }
 );
+
+const Globe = dynamic(
+  () => import("@/components/originkit/globe"),
+  {
+    ssr: false,
+    loading: () => (
+      <div style={{
+        width: "100%", height: "100%",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <div style={{
+          width: 200, height: 200, borderRadius: "50%",
+          border: "1px solid #2a2a2a",
+          animation: "globe-pulse 2s ease-in-out infinite",
+        }} />
+      </div>
+    ),
+  }
+);
+
+// memo prevents Three.js scene from re-mounting on parent re-renders
+const GlobeMemo = memo(function GlobeMemo() {
+  return (
+    <Globe
+      speed={1.5}
+      scale={8}
+      oceanColor="#0a0a0a"
+      outlineColor="#2a2a2a"
+      showOutline={true}
+      showGrid={false}
+      dots={{ color: "#ffffff", size: 2.5, density: 9, allDots: false }}
+      style={{ width: "100%", height: "100%" }}
+    />
+  );
+});
 
 const DURATIONS = [
   { label: "30 min", value: 30 },
@@ -58,7 +92,9 @@ export default function Home() {
   const loadingRef = useRef<HTMLDivElement>(null);
 
   const heroSentinelRef = useRef<HTMLDivElement>(null);
+  const globeSentinelRef = useRef<HTMLDivElement>(null);
   const heroInView = useInView(heroSentinelRef, "0px");
+  const globeInView = useInView(globeSentinelRef, "400px");
 
   const heroTitleRef   = useRef<HTMLHeadingElement>(null);
   const heroSubRef     = useRef<HTMLParagraphElement>(null);
@@ -80,6 +116,9 @@ export default function Home() {
       const { gsap } = await import("gsap");
       const { ScrollTrigger } = await import("gsap/ScrollTrigger");
       gsap.registerPlugin(ScrollTrigger);
+
+      // Preload Globe chunk in background so it's ready when user scrolls to it
+      import("@/components/originkit/globe").catch(() => {});
 
       gsap.fromTo("body", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out" });
 
@@ -412,8 +451,8 @@ export default function Home() {
             </span>
           </div>
 
-          <div style={{ flexShrink: 0 }}>
-            <GlobeLite size={420} dotColor="#ffffff" dotSize={1.8} dotDensity={700} speed={0.003} />
+          <div ref={globeSentinelRef} style={{ width: 450, height: 450, maxWidth: "90vw", maxHeight: "90vw", flexShrink: 0 }}>
+            {globeInView && <GlobeMemo />}
           </div>
         </section>
 
@@ -587,6 +626,10 @@ export default function Home() {
           @keyframes portal-pulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
             50%       { box-shadow: 0 0 0 6px rgba(255,255,255,0.08); }
+          }
+          @keyframes globe-pulse {
+            0%, 100% { opacity: 0.06; transform: scale(1); }
+            50%       { opacity: 0.12; transform: scale(1.03); }
           }
         `}</style>
       </main>
