@@ -2,24 +2,90 @@
 
 import { useEffect, useRef } from "react";
 
-// Lightweight dot-globe on 2D canvas — no Three.js, no d3-geo
-// ~50 LOC vs 400 KB of JS bundles
+// Lightweight canvas globe with continent-shaped dots
+// No Three.js, no d3-geo — uses pre-defined land regions + seeded RNG
 
 interface Props {
   size?: number;
   dotColor?: string;
   dotSize?: number;
-  dotDensity?: number;
   speed?: number;
   style?: React.CSSProperties;
 }
 
+// Seeded pseudo-random — same dots every render
+function rand(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = Math.imul(s ^ (s >>> 15), s | 1);
+    s ^= s + Math.imul(s ^ (s >>> 7), s | 61);
+    return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// [lat_min, lat_max, lon_min, lon_max, count]
+// Covers all major continents with rough bounding rectangles
+const LAND_REGIONS: [number, number, number, number, number][] = [
+  // North America
+  [49,  73, -140,  -60,  55],  // Canada
+  [24,  49, -125,  -65,  65],  // USA
+  [14,  30, -117,  -85,  22],  // Mexico / Central America
+  [58,  84,  -58,  -18,  14],  // Greenland
+  // South America
+  [-5,  12,  -83,  -50,  22],  // Colombia / Venezuela
+  [-56,  -5,  -76,  -35,  65], // Main body
+  // Europe
+  [36,  72,  -10,   35,  50],  // Western + Central Europe
+  [55,  72,   15,   60,  18],  // Scandinavia extension
+  [51,  60,  -11,    2,   8],  // UK / Ireland
+  // Africa
+  [-35,  37,  -18,   52, 105],
+  // Middle East / Arabia
+  [15,  38,   35,   62,  22],
+  // South Asia
+  [ 6,  36,   62,   97,  42],  // India / Pakistan / Sri Lanka
+  // Southeast Asia mainland
+  [ 0,  25,   97,  112,  18],  // Thailand / Indochina
+  // East Asia
+  [20,  55,  100,  145,  55],  // China / Korea / Japan
+  [31,  45,  129,  146,  10],  // Japan islands
+  // Russia / Central Asia
+  [50,  75,   55,  180,  70],
+  // Indonesia / Philippines
+  [-10,   8,   95,  142,  28],
+  // Australia
+  [-43, -12,  113,  154,  40],
+  // New Zealand
+  [-47, -34,  165,  178,   6],
+];
+
+function buildLandDots(): [number, number, number][] {
+  const r = rand(0xdeadbeef);
+  const out: [number, number, number][] = [];
+
+  for (const [latMin, latMax, lonMin, lonMax, count] of LAND_REGIONS) {
+    for (let i = 0; i < count; i++) {
+      const lat = latMin + r() * (latMax - latMin);
+      const lon = lonMin + r() * (lonMax - lonMin);
+      // Convert lat/lon (degrees) → 3D unit vector
+      const phi  = (90 - lat) * (Math.PI / 180);
+      const theta = (lon + 180) * (Math.PI / 180);
+      const x = Math.sin(phi) * Math.cos(theta);
+      const y = Math.cos(phi);
+      const z = Math.sin(phi) * Math.sin(theta);
+      out.push([x, y, z]);
+    }
+  }
+  return out;
+}
+
+const LAND_DOTS = buildLandDots(); // computed once at module load
+
 export function GlobeLite({
-  size = 450,
+  size = 420,
   dotColor = "#ffffff",
-  dotSize = 1.8,
-  dotDensity = 600,
-  speed = 0.004,
+  dotSize = 2,
+  speed = 0.003,
   style,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -31,9 +97,8 @@ export function GlobeLite({
     if (!ctx) return;
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const px = Math.round(size * dpr);
-    canvas.width = px;
-    canvas.height = px;
+    canvas.width  = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
     ctx.scale(dpr, dpr);
 
     const r = size / 2;
@@ -41,25 +106,18 @@ export function GlobeLite({
     let alive = true;
     let raf = 0;
 
-    // Pre-generate stable dot positions on the sphere
-    const dots: [number, number][] = [];
-    const PHI = Math.PI * (Math.sqrt(5) - 1); // golden angle
-    for (let i = 0; i < dotDensity; i++) {
-      const y = 1 - (i / (dotDensity - 1)) * 2;
-      const radiusAtY = Math.sqrt(1 - y * y);
-      const theta = PHI * i;
-      const x = Math.cos(theta) * radiusAtY;
-      const z = Math.sin(theta) * radiusAtY;
-      dots.push([x, y, z] as unknown as [number, number]);
-    }
+    // Pre-parse hex color once
+    const hex = dotColor.replace("#", "");
+    const dr = parseInt(hex.slice(0, 2), 16);
+    const dg = parseInt(hex.slice(2, 4), 16);
+    const db = parseInt(hex.slice(4, 6), 16);
 
     function draw() {
-      if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, size, size);
 
       // Faint sphere rim
       ctx.beginPath();
-      ctx.arc(r, r, r - 1, 0, Math.PI * 2);
+      ctx.arc(r, r, r - 2, 0, Math.PI * 2);
       ctx.strokeStyle = "rgba(255,255,255,0.04)";
       ctx.lineWidth = 1;
       ctx.stroke();
@@ -67,28 +125,25 @@ export function GlobeLite({
       const cosA = Math.cos(angle);
       const sinA = Math.sin(angle);
 
-      for (const dot of dots as unknown as [number, number, number][]) {
-        const [dx, dy, dz] = dot;
+      for (const [dx, dy, dz] of LAND_DOTS) {
         // Rotate around Y axis
-        const rx = dx * cosA + dz * sinA;
-        const ry = dy;
+        const rx =  dx * cosA + dz * sinA;
+        const ry =  dy;
         const rz = -dx * sinA + dz * cosA;
 
-        // Only draw front-facing dots
-        if (rz < -0.1) continue;
+        // Cull back-facing dots
+        if (rz < 0) continue;
 
-        // Simple orthographic projection
-        const sx = r + rx * (r - 4);
-        const sy = r - ry * (r - 4);
+        // Orthographic projection
+        const sx = r + rx * (r - 6);
+        const sy = r - ry * (r - 6);
 
-        // Depth-based opacity
-        const alpha = 0.15 + (rz + 1) * 0.42;
+        // Depth → opacity: front=bright, edge=dim
+        const alpha = 0.2 + rz * 0.8;
 
         ctx.beginPath();
         ctx.arc(sx, sy, dotSize, 0, Math.PI * 2);
-        ctx.fillStyle = dotColor.startsWith("#")
-          ? hexToRgba(dotColor, alpha)
-          : dotColor;
+        ctx.fillStyle = `rgba(${dr},${dg},${db},${alpha.toFixed(2)})`;
         ctx.fill();
       }
     }
@@ -102,7 +157,7 @@ export function GlobeLite({
 
     raf = requestAnimationFrame(loop);
     return () => { alive = false; cancelAnimationFrame(raf); };
-  }, [size, dotColor, dotSize, dotDensity, speed]);
+  }, [size, dotColor, dotSize, speed]);
 
   return (
     <canvas
@@ -110,12 +165,4 @@ export function GlobeLite({
       style={{ width: size, height: size, display: "block", ...style }}
     />
   );
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${alpha.toFixed(2)})`;
 }
