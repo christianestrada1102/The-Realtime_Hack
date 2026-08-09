@@ -179,9 +179,11 @@ export default function Home() {
       });
     };
 
-    const id = requestIdleCallback ? requestIdleCallback(initGsap) : setTimeout(initGsap, 100);
+    const useIdle = typeof requestIdleCallback !== "undefined";
+    const id = useIdle ? requestIdleCallback(initGsap) : setTimeout(initGsap, 100);
     return () => {
-      if (typeof id === "number") cancelIdleCallback ? cancelIdleCallback(id) : clearTimeout(id);
+      if (useIdle) cancelIdleCallback(id as number);
+      else clearTimeout(id as ReturnType<typeof setTimeout>);
       ctx?.revert();
       import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
         ScrollTrigger.getAll().forEach((t) => t.kill());
@@ -336,7 +338,7 @@ export default function Home() {
           alignItems: "center", justifyContent: "center", overflow: "hidden",
         }}>
           <div ref={heroSentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            {heroInView && (
+            {heroInView && !isMobile && (
               <div style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
                 <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
               </div>
