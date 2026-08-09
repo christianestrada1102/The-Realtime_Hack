@@ -341,14 +341,12 @@ export default function Home() {
           alignItems: "center", justifyContent: "center", overflow: "hidden",
         }}>
           <div ref={heroSentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            {heroInView && (
-              isMobile ? (
-                <MobileWaves />
-              ) : (
-                <div style={{ position: "absolute", inset: 0, opacity: 0.15, overflow: "hidden" }}>
-                  <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
-                </div>
-              )
+            {isMobile ? (
+              <MobileWaves />
+            ) : heroInView && (
+              <div style={{ position: "absolute", inset: 0, opacity: 0.15, overflow: "hidden" }}>
+                <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
+              </div>
             )}
           </div>
 
