@@ -338,8 +338,8 @@ export default function Home() {
           alignItems: "center", justifyContent: "center", overflow: "hidden",
         }}>
           <div ref={heroSentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            {heroInView && !isMobile && (
-              <div style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
+            {heroInView && (
+              <div style={{ position: "absolute", inset: 0, opacity: isMobile ? 0.08 : 0.12, overflow: "hidden" }}>
                 <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
               </div>
             )}
@@ -430,11 +430,14 @@ export default function Home() {
 
         {/* ── Globe + Stats ── */}
         <section ref={globeSectionRef} style={{
-          display: "flex", alignItems: "center", justifyContent: "center",
-          padding: "80px 24px", gap: 64, opacity: 0,
-          flexWrap: "wrap", borderTop: `1px solid ${C.borderLo}`,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: "center", justifyContent: "center",
+          padding: isMobile ? "60px 24px" : "80px 24px",
+          gap: isMobile ? 40 : 64, opacity: 0,
+          borderTop: `1px solid ${C.borderLo}`,
         }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 200, maxWidth: 280 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 32, width: isMobile ? "100%" : undefined, maxWidth: 280, textAlign: isMobile ? "center" : "left" }}>
             <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>El problema real</span>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -444,7 +447,7 @@ export default function Home() {
                 { num: "50%+", label: "peor desempeño cuando hay un observador presente" },
               ].map(({ num, label }) => (
                 <div key={num} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ fontFamily: "monospace", fontSize: 24, color: C.white, lineHeight: 1 }}>{num}</span>
+                  <span style={{ fontFamily: "monospace", fontSize: isMobile ? 20 : 24, color: C.white, lineHeight: 1 }}>{num}</span>
                   <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, lineHeight: 1.6 }}>{label}</span>
                 </div>
               ))}
@@ -455,11 +458,17 @@ export default function Home() {
             </span>
           </div>
 
-          {!isMobile && (
-            <div ref={globeSentinelRef} style={{ width: 450, height: 450, maxWidth: "90vw", maxHeight: "90vw", flexShrink: 0 }}>
-              {globeInView && <GlobeMemo />}
-            </div>
-          )}
+          <div
+            ref={globeSentinelRef}
+            style={{
+              width: isMobile ? 280 : 450,
+              height: isMobile ? 280 : 450,
+              flexShrink: 0,
+              margin: isMobile ? "0 auto" : undefined,
+            }}
+          >
+            {globeInView && <GlobeMemo />}
+          </div>
         </section>
 
         {/* ── Cómo funciona ── */}
@@ -472,15 +481,26 @@ export default function Home() {
           </p>
           <div
             ref={howSectionRef}
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, maxWidth: 760, width: "100%" }}
+            style={isMobile
+              ? { display: "flex", flexDirection: "column", width: "100%", maxWidth: 400 }
+              : { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, maxWidth: 760, width: "100%" }
+            }
           >
-            {HOW_IT_WORKS.map((item, i) => (
+            {(isMobile
+              ? [HOW_IT_WORKS[0], HOW_IT_WORKS[2], HOW_IT_WORKS[1]]
+              : HOW_IT_WORKS
+            ).map((item, i, arr) => (
               <div
-                key={i}
+                key={item.title}
                 className="how-col"
-                style={{
+                style={isMobile ? {
+                  borderBottom: i < arr.length - 1 ? `1px solid #1a1a1a` : "none",
+                  padding: "24px 0",
+                  display: "flex", flexDirection: "column", gap: 12, opacity: 0,
+                  alignItems: "center", textAlign: "center",
+                } : {
                   borderTop: `1px solid ${C.border}`,
-                  borderRight: i < HOW_IT_WORKS.length - 1 ? `1px solid ${C.border}` : "none",
+                  borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
                   padding: "24px 32px 24px 0",
                   paddingLeft: i === 0 ? 0 : 32,
                   display: "flex", flexDirection: "column", gap: 12, opacity: 0,
@@ -507,72 +527,119 @@ export default function Home() {
             </p>
           </div>
 
-          <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", display: isMobile ? "none" : "block" }}>
-            {/* Fila superior: Tú → Canal Portal */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {/* Nodo: Tú */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low }}>mic</span>
+          <div style={{ maxWidth: 800, width: "100%", margin: "0 auto" }}>
+            {isMobile ? (
+              /* Mobile: vertical stack Tú → Canal Portal → Ana | Observador */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
+                {/* Nodo: Tú */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontFamily: "monospace", fontSize: 9, color: C.low }}>mic</span>
+                  </div>
+                  <span style={{ fontFamily: "monospace", fontSize: 11, color: C.mid }}>Tú</span>
                 </div>
-                <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>Tú</span>
-                <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 80 }}>
-                  Hablas por micrófono
-                </span>
-              </div>
-
-              {/* Conector */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, maxWidth: 160, padding: "0 8px" }}>
-                <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim, marginBottom: 4, whiteSpace: "nowrap" }}>
-                  Whisper transcribe
-                </span>
-                <div style={{ width: "100%", display: "flex", alignItems: "center" }}>
-                  <div style={{ flex: 1, height: 1, backgroundColor: C.border }} />
-                  <div style={{ width: 0, height: 0, borderTop: "4px solid transparent", borderBottom: "4px solid transparent", borderLeft: `6px solid ${C.dim}` }} />
-                </div>
-              </div>
-
-              {/* Nodo: Canal Portal */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.white}`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  animation: "portal-pulse 2.4s ease-in-out infinite",
-                }}>
-                  <span style={{ fontFamily: "monospace", fontSize: 9, color: C.mid }}>⬤</span>
-                </div>
-                <span style={{ fontFamily: "monospace", fontSize: 12, color: C.white }}>Canal Portal</span>
-                <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 100 }}>
-                  Estado compartido en tiempo real
-                </span>
-              </div>
-            </div>
-
-            {/* Línea vertical central */}
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <div style={{ width: 1, height: 40, backgroundColor: C.border }} />
-            </div>
-
-            {/* Fila inferior: Ana | Observador */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 64, flexWrap: "wrap" }}>
-              {[
-                { id: "ana", label: "Ana",        role: "Entrevistadora principal",  note: "Responde, presiona, cambia de tema" },
-                { id: "obs", label: "Observador", role: "Segunda IA silenciosa",     note: "Detecta silencios, interrumpe cuando bajas la guardia" },
-              ].map(({ id, label, role, note }) => (
-                <div key={id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 1, height: 24, backgroundColor: C.border }} />
+                {/* Arrow down */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "6px 0" }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 9, color: C.dim }}>Whisper</span>
+                  <div style={{ width: 1, height: 20, backgroundColor: C.border }} />
                   <div style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: `6px solid ${C.dim}` }} />
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginTop: 4 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low }}>{id}</span>
+                </div>
+                {/* Nodo: Canal Portal */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${C.white}`, display: "flex", alignItems: "center", justifyContent: "center", animation: "portal-pulse 2.4s ease-in-out infinite" }}>
+                    <span style={{ fontFamily: "monospace", fontSize: 9, color: C.mid }}>⬤</span>
+                  </div>
+                  <span style={{ fontFamily: "monospace", fontSize: 11, color: C.white }}>Canal Portal</span>
+                </div>
+                {/* Arrow down */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", margin: "6px 0" }}>
+                  <div style={{ width: 1, height: 20, backgroundColor: C.border }} />
+                  <div style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: `6px solid ${C.dim}` }} />
+                </div>
+                {/* Fila: Ana | Observador */}
+                <div style={{ display: "flex", gap: 32 }}>
+                  {[
+                    { id: "ana", label: "Ana" },
+                    { id: "obs", label: "Observador" },
+                  ].map(({ id, label }) => (
+                    <div key={id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ fontFamily: "monospace", fontSize: 9, color: C.low }}>{id}</span>
+                      </div>
+                      <span style={{ fontFamily: "monospace", fontSize: 11, color: C.mid }}>{label}</span>
                     </div>
-                    <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>{label}</span>
-                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 120 }}>{role}</span>
-                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim, textAlign: "center", maxWidth: 160 }}>{note}</span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Fila superior: Tú → Canal Portal */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {/* Nodo: Tú */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low }}>mic</span>
+                    </div>
+                    <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>Tú</span>
+                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 80 }}>
+                      Hablas por micrófono
+                    </span>
+                  </div>
+
+                  {/* Conector */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, maxWidth: 160, padding: "0 8px" }}>
+                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim, marginBottom: 4, whiteSpace: "nowrap" }}>
+                      Whisper transcribe
+                    </span>
+                    <div style={{ width: "100%", display: "flex", alignItems: "center" }}>
+                      <div style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+                      <div style={{ width: 0, height: 0, borderTop: "4px solid transparent", borderBottom: "4px solid transparent", borderLeft: `6px solid ${C.dim}` }} />
+                    </div>
+                  </div>
+
+                  {/* Nodo: Canal Portal */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.white}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      animation: "portal-pulse 2.4s ease-in-out infinite",
+                    }}>
+                      <span style={{ fontFamily: "monospace", fontSize: 9, color: C.mid }}>⬤</span>
+                    </div>
+                    <span style={{ fontFamily: "monospace", fontSize: 12, color: C.white }}>Canal Portal</span>
+                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 100 }}>
+                      Estado compartido en tiempo real
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
+
+                {/* Línea vertical central */}
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  <div style={{ width: 1, height: 40, backgroundColor: C.border }} />
+                </div>
+
+                {/* Fila inferior: Ana | Observador */}
+                <div style={{ display: "flex", justifyContent: "center", gap: 64, flexWrap: "wrap" }}>
+                  {[
+                    { id: "ana", label: "Ana",        role: "Entrevistadora principal",  note: "Responde, presiona, cambia de tema" },
+                    { id: "obs", label: "Observador", role: "Segunda IA silenciosa",     note: "Detecta silencios, interrumpe cuando bajas la guardia" },
+                  ].map(({ id, label, role, note }) => (
+                    <div key={id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 1, height: 24, backgroundColor: C.border }} />
+                      <div style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: `6px solid ${C.dim}` }} />
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginTop: 4 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low }}>{id}</span>
+                        </div>
+                        <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>{label}</span>
+                        <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 120 }}>{role}</span>
+                        <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim, textAlign: "center", maxWidth: 160 }}>{note}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Columnas explicativas */}
