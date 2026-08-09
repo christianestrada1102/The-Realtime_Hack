@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import { useBreakpoint } from "@/lib/useIsMobile";
+import MobileWaves from "@/components/MobileWaves";
 import dynamic from "next/dynamic";
 
 const ChromaticWaves = dynamic(
@@ -342,12 +343,7 @@ export default function Home() {
           <div ref={heroSentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
             {heroInView && (
               isMobile ? (
-                <div style={{
-                  position: "absolute", inset: 0, opacity: 0.3,
-                  backgroundImage: "radial-gradient(circle, #333 1px, transparent 1px)",
-                  backgroundSize: "24px 24px",
-                  animation: "drift 20s ease-in-out infinite",
-                }} />
+                <MobileWaves />
               ) : (
                 <div style={{ position: "absolute", inset: 0, opacity: 0.15, overflow: "hidden" }}>
                   <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
