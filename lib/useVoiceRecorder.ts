@@ -36,7 +36,6 @@ export function useVoiceRecorder() {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 16000,   // Whisper's native sample rate — less resampling = better accuracy
           channelCount: 1,
         },
       });
