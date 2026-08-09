@@ -280,9 +280,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid #1a1a1a",
       }}>
-        <span style={{ fontFamily: "Manuscribe, serif", fontSize: 16, color: "#fff" }}>
+        <a href="/" style={{ fontFamily: "Manuscribe, serif", fontSize: 16, color: "#fff", textDecoration: "none" }}>
           Poised
-        </span>
+        </a>
         <span style={{ fontFamily: "monospace", fontSize: 11, color: "#888" }}>
           Entrevista técnica · Mid
         </span>
