@@ -8,6 +8,7 @@ import { FeedbackScreen } from "./FeedbackScreen";
 import { useVoiceRecorder } from "@/lib/useVoiceRecorder";
 import { useAudioPlayer } from "@/lib/useAudioPlayer";
 import { useSilenceDetector } from "@/lib/useSilenceDetector";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 const CodeEditor = dynamic(() => import("./CodeEditor").then((m) => m.CodeEditor), { ssr: false });
 
@@ -45,6 +46,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const [codeValue, setCodeValue] = useState("// Escribe tu solución aquí\n");
   const [waveformBars, setWaveformBars] = useState<number[]>([4, 4, 4, 4, 4]);
   const [showFeedback, setShowFeedback] = useState(false);
+  const isMobile = useIsMobile();
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
@@ -274,11 +276,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   return (
     <div style={{ backgroundColor: "#0a0a0a", minHeight: "100vh" }} className="flex flex-col text-white overflow-hidden">
 
-      {/* ── Header ── Fix 1 */}
+      {/* ── Header ── */}
       <header style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 20,
         height: 48, display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 24px",
+        padding: isMobile ? "0 16px" : "0 24px",
         backgroundColor: "rgba(10,10,10,0.85)",
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid #1a1a1a",
@@ -286,12 +288,14 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         <a href="/" style={{ fontFamily: "Manuscribe, serif", fontSize: 16, color: "#fff", textDecoration: "none" }}>
           Poised
         </a>
-        <span style={{ fontFamily: "monospace", fontSize: 11, color: "#888" }}>
-          Entrevista técnica · Mid
-        </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        {!isMobile && (
+          <span style={{ fontFamily: "monospace", fontSize: 11, color: "#888" }}>
+            Entrevista técnica · Mid
+          </span>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 12 : 20 }}>
           <span style={{
-            fontFamily: "monospace", fontSize: 13, fontWeight: 500,
+            fontFamily: "monospace", fontSize: isMobile ? 12 : 13, fontWeight: 500,
             color: remaining !== null && remaining <= 300 ? "#ef4444" : "#fff",
             transition: "color 200ms",
           }}>
@@ -307,7 +311,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#888")}
           >
-            Ver transcripcion
+            {isMobile ? "≡" : "Ver transcripcion"}
           </button>
           {phase !== "ended" && (
             <button
@@ -320,24 +324,24 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
             >
-              Terminar
+              {isMobile ? "✕" : "Terminar"}
             </button>
           )}
         </div>
       </header>
 
-      {/* ── Zona superior: Entrevistador (60%) ── */}
+      {/* ── Zona superior: Entrevistador ── */}
       <div style={{
-        flex: "0 0 60vh",
+        flex: isMobile ? "0 0 50vh" : "0 0 60vh",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        gap: 16, paddingTop: 48,
+        gap: isMobile ? 12 : 16, paddingTop: 48,
         backgroundColor: "#111111",
         backgroundImage: NOISE_BG, backgroundRepeat: "repeat", backgroundSize: "200px 200px",
         borderBottom: "1px solid #1a1a1a",
         position: "relative",
       }}>
-        <div style={{ position: "relative", width: 120, height: 120 }}>
+        <div style={{ position: "relative", width: isMobile ? 80 : 120, height: isMobile ? 80 : 120 }}>
           {(isSpeaking || isListening) && (
             <div style={{
               position: "absolute", inset: -8, borderRadius: "50%",
@@ -346,11 +350,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             }} />
           )}
           <div style={{
-            width: 120, height: 120, borderRadius: "50%",
+            width: isMobile ? 80 : 120, height: isMobile ? 80 : 120, borderRadius: "50%",
             backgroundColor: "#1a1a1a", border: "1px solid #333",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <span style={{ fontFamily: "Manuscribe, serif", fontSize: 48, color: "#fff", lineHeight: 1, userSelect: "none" }}>
+            <span style={{ fontFamily: "Manuscribe, serif", fontSize: isMobile ? 32 : 48, color: "#fff", lineHeight: 1, userSelect: "none" }}>
               A
             </span>
           </div>
@@ -387,12 +391,12 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         )}
       </div>
 
-      {/* ── Zona inferior: Usuario (40%) ── */}
+      {/* ── Zona inferior: Usuario ── */}
       <div style={{
-        flex: "0 0 40vh",
+        flex: isMobile ? "1 1 0" : "0 0 40vh",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        gap: 24, backgroundColor: "#0a0a0a",
+        gap: isMobile ? 16 : 24, backgroundColor: "#0a0a0a",
         padding: "0 24px", position: "relative",
       }}>
 
@@ -427,10 +431,12 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           </div>
         ) : showEditor ? (
           <div style={{
-            width: "100%", maxWidth: 640,
-            border: "1px solid #222", borderRadius: 8,
+            width: "100%", maxWidth: isMobile ? "100%" : 640,
+            border: isMobile ? "none" : "1px solid #222",
+            borderRadius: isMobile ? 0 : 8,
             backgroundColor: "#0d0d0d",
             display: "flex", flexDirection: "column", overflow: "hidden",
+            ...(isMobile ? { position: "fixed", inset: 0, zIndex: 25, paddingTop: 48 } : {}),
           }}>
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -452,7 +458,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                 cerrar
               </button>
             </div>
-            <div style={{ height: 160 }}>
+            <div style={{ height: isMobile ? "calc(100vh - 100px)" : 160 }}>
               <CodeEditor value={codeValue} onChange={setCodeValue} />
             </div>
           </div>
@@ -508,10 +514,13 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         )}
       </div>
 
-      {/* ── Panel de transcripcion ── Fix 3 */}
+      {/* ── Panel de transcripcion ── */}
       <div style={{
-        position: "fixed", top: 0, right: 0, bottom: 0, width: 360,
-        backgroundColor: "#0f0f0f", borderLeft: "2px solid #222",
+        position: "fixed",
+        top: 0, right: 0, bottom: 0,
+        width: isMobile ? "100%" : 360,
+        backgroundColor: "#0f0f0f",
+        borderLeft: isMobile ? "none" : "2px solid #222",
         zIndex: 30, display: "flex", flexDirection: "column",
         transform: showTranscript ? "translateX(0)" : "translateX(100%)",
         transition: "transform 0.25s ease",

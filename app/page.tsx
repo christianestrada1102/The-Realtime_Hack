@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
+import { useIsMobile } from "@/lib/useIsMobile";
 import dynamic from "next/dynamic";
 
 const ChromaticWaves = dynamic(
@@ -84,6 +85,7 @@ function useInView(ref: React.RefObject<Element | null>, rootMargin = "200px") {
 
 export default function Home() {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [duration, setDuration] = useState(45);
   const [modalOpen, setModalOpen] = useState(false);
   const [loadingVisible, setLoadingVisible] = useState(true);
@@ -258,7 +260,7 @@ export default function Home() {
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 40px", height: 52,
+        padding: isMobile ? "0 20px" : "0 40px", height: 52,
         backgroundColor: "rgba(10,10,10,0.72)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
@@ -272,7 +274,7 @@ export default function Home() {
           Poised
         </span>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+        <div style={{ display: isMobile ? "none" : "flex", alignItems: "center", gap: 32 }}>
           {[
             { label: "El problema",   href: "#problema", id: "problema" },
             { label: "Cómo funciona", href: "#como",     id: "como" },
@@ -451,9 +453,11 @@ export default function Home() {
             </span>
           </div>
 
-          <div ref={globeSentinelRef} style={{ width: 450, height: 450, maxWidth: "90vw", maxHeight: "90vw", flexShrink: 0 }}>
-            {globeInView && <GlobeMemo />}
-          </div>
+          {!isMobile && (
+            <div ref={globeSentinelRef} style={{ width: 450, height: 450, maxWidth: "90vw", maxHeight: "90vw", flexShrink: 0 }}>
+              {globeInView && <GlobeMemo />}
+            </div>
+          )}
         </section>
 
         {/* ── Cómo funciona ── */}
@@ -501,7 +505,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div style={{ maxWidth: 800, width: "100%", margin: "0 auto" }}>
+          <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", display: isMobile ? "none" : "block" }}>
             {/* Fila superior: Tú → Canal Portal */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
               {/* Nodo: Tú */}
@@ -571,7 +575,7 @@ export default function Home() {
 
           {/* Columnas explicativas */}
           <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", borderTop: `1px solid ${C.borderLo}`, paddingTop: 48 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 32 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))", gap: isMobile ? 24 : 32 }}>
               {[
                 { title: "Portal como canal",       body: "Cada mensaje, cada transcripción y cada respuesta pasan por un canal Portal en tiempo real. No hay polling. No hay delay artificial." },
                 { title: "Dos agentes, un contexto", body: "Ana y el Observador comparten el mismo historial de conversación a través del canal. Cuando el Observador interrumpe, Ana lo sabe." },
@@ -589,8 +593,12 @@ export default function Home() {
         {/* ── Footer ── */}
         <footer style={{
           borderTop: "1px solid #1a1a1a",
-          padding: "24px 40px",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: isMobile ? "24px 20px" : "24px 40px",
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: isMobile ? "center" : "space-between",
+          alignItems: "center",
+          gap: isMobile ? 8 : 0,
           backgroundColor: "#0a0a0a",
         }}>
           <span style={{ fontFamily: "monospace", fontSize: 11, color: "#666" }}>
@@ -649,9 +657,9 @@ export default function Home() {
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: "#111", border: `1px solid ${C.border}`,
-              borderRadius: 8, padding: 40,
+              borderRadius: 8, padding: isMobile ? 28 : 40,
               display: "flex", flexDirection: "column", alignItems: "center", gap: 28,
-              position: "relative", minWidth: 300,
+              position: "relative", minWidth: isMobile ? "calc(100vw - 48px)" : 300,
             }}
           >
             <button

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useIsMobile } from "@/lib/useIsMobile";
 import type { FeedbackData } from "@/app/api/feedback/route";
 
 type HistoryEntry = { role: "user" | "interviewer"; content: string };
@@ -20,6 +21,7 @@ function useFadeIn(index: number, ready: boolean) {
 
 export function FeedbackScreen({ history }: Props) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackData | null>(null);
@@ -62,7 +64,7 @@ export function FeedbackScreen({ history }: Props) {
 
   return (
     <div style={{ backgroundColor: "#0a0a0a", minHeight: "100vh", color: "#fff" }}>
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "64px 24px 80px" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: isMobile ? "40px 20px 60px" : "64px 24px 80px" }}>
 
         {/* Poised wordmark */}
         <p style={{
@@ -101,7 +103,7 @@ export function FeedbackScreen({ history }: Props) {
 
             {/* Score */}
             <div style={{ textAlign: "center", ...useFadeIn(0, visible) }}>
-              <p style={{ fontFamily: "Manuscribe, serif", fontSize: 96, color: "#fff", margin: 0, lineHeight: 1 }}>
+              <p style={{ fontFamily: "Manuscribe, serif", fontSize: isMobile ? 64 : 96, color: "#fff", margin: 0, lineHeight: 1 }}>
                 {feedback.score.toFixed(1)}
               </p>
               {/* Score bar */}
@@ -135,8 +137,8 @@ export function FeedbackScreen({ history }: Props) {
             {/* Strengths + Weaknesses */}
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 32,
+              gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: isMobile ? 24 : 32,
               ...useFadeIn(2, visible),
             }}>
               <div>
