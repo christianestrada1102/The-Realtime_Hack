@@ -10,6 +10,19 @@ import { useAudioPlayer } from "@/lib/useAudioPlayer";
 import { useSilenceDetector } from "@/lib/useSilenceDetector";
 import { useBreakpoint } from "@/lib/useIsMobile";
 
+// Unlocks iOS audio engine — must be called from a direct user gesture (tap)
+function unlockIOSAudio() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    ctx.resume();
+    const buf = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch {}
+}
+
 const CodeEditor = dynamic(() => import("./CodeEditor").then((m) => m.CodeEditor), { ssr: false });
 
 type ChatContent = { text: string; role?: "user" | "interviewer" | "observer" };
@@ -48,6 +61,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
+  const [audioUnlocked, setAudioUnlocked] = useState(!isMobile);
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
@@ -230,10 +244,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (startedRef.current) return;
     if (status !== "ready") return;
+    if (!audioUnlocked) return;
     startedRef.current = true;
     setSessionStarted(true);
     startInterview();
-  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status, audioUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!sessionStarted || phase === "ended") return;
@@ -273,6 +288,36 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const isListening = phase === "listening";
 
   if (showFeedback) return <FeedbackScreen history={historyRef.current} />;
+
+  // iOS requires audio to be triggered from a direct user gesture.
+  // Show a tap gate on mobile so we can unlock the audio engine before starting.
+  if (isMobile && !audioUnlocked) {
+    return (
+      <div style={{
+        backgroundColor: "#0a0a0a", minHeight: "100vh",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", gap: 24,
+      }}>
+        <p style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: "#fff" }}>Poised</p>
+        <p style={{ fontFamily: "monospace", fontSize: 12, color: "#666", textAlign: "center", maxWidth: 260, lineHeight: 1.8 }}>
+          Toca para comenzar la entrevista
+        </p>
+        <button
+          onClick={() => {
+            unlockIOSAudio();
+            setAudioUnlocked(true);
+          }}
+          style={{
+            fontFamily: "monospace", fontSize: 13, color: "#fff",
+            background: "none", border: "1px solid #333", borderRadius: 6,
+            padding: "14px 36px", cursor: "pointer",
+          }}
+        >
+          Comenzar
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ backgroundColor: "#0a0a0a", minHeight: "100vh" }} className="flex flex-col text-white overflow-hidden">
