@@ -339,9 +339,21 @@ export default function Home() {
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", overflow: "hidden",
         }}>
-          {/* TEST: ChromaticWaves directo, sin wrapper condicional */}
-          <div ref={heroSentinelRef} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", opacity: 0.15, zIndex: 0, pointerEvents: "none" }}>
-            <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
+          <div ref={heroSentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            {heroInView && (
+              isMobile ? (
+                <div style={{
+                  position: "absolute", inset: 0, opacity: 0.3,
+                  backgroundImage: "radial-gradient(circle, #333 1px, transparent 1px)",
+                  backgroundSize: "24px 24px",
+                  animation: "drift 20s ease-in-out infinite",
+                }} />
+              ) : (
+                <div style={{ position: "absolute", inset: 0, opacity: 0.15, overflow: "hidden" }}>
+                  <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
+                </div>
+              )
+            )}
           </div>
 
           <div style={{ position: "relative", zIndex: 1, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
@@ -695,6 +707,10 @@ export default function Home() {
         </footer>
 
         <style>{`
+          @keyframes drift {
+            0%, 100% { background-position: 0 0; }
+            50% { background-position: 12px 12px; }
+          }
           @keyframes scroll-line {
             0%   { transform: scaleY(0); transform-origin: top; }
             50%  { transform: scaleY(1); transform-origin: top; }
