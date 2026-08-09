@@ -95,11 +95,12 @@ export function GlobeLite({
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    const c = ctx;
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     canvas.width  = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
-    ctx.scale(dpr, dpr);
+    c.scale(dpr, dpr);
 
     const r = size / 2;
     let angle = 0;
@@ -113,14 +114,14 @@ export function GlobeLite({
     const db = parseInt(hex.slice(4, 6), 16);
 
     function draw() {
-      ctx.clearRect(0, 0, size, size);
+      c.clearRect(0, 0, size, size);
 
       // Faint sphere rim
-      ctx.beginPath();
-      ctx.arc(r, r, r - 2, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(255,255,255,0.04)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      c.beginPath();
+      c.arc(r, r, r - 2, 0, Math.PI * 2);
+      c.strokeStyle = "rgba(255,255,255,0.04)";
+      c.lineWidth = 1;
+      c.stroke();
 
       const cosA = Math.cos(angle);
       const sinA = Math.sin(angle);
@@ -141,10 +142,10 @@ export function GlobeLite({
         // Depth → opacity: front=bright, edge=dim
         const alpha = 0.2 + rz * 0.8;
 
-        ctx.beginPath();
-        ctx.arc(sx, sy, dotSize, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${dr},${dg},${db},${alpha.toFixed(2)})`;
-        ctx.fill();
+        c.beginPath();
+        c.arc(sx, sy, dotSize, 0, Math.PI * 2);
+        c.fillStyle = `rgba(${dr},${dg},${db},${alpha.toFixed(2)})`;
+        c.fill();
       }
     }
 
