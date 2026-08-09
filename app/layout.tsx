@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PortalClientProvider } from "@/components/PortalClientProvider";
+import { LenisProvider } from "@/components/LenisProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,7 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <body className="bg-zinc-950 text-zinc-100 antialiased">
-        <PortalClientProvider>{children}</PortalClientProvider>
+        <LenisProvider>
+          <PortalClientProvider>{children}</PortalClientProvider>
+        </LenisProvider>
       </body>
     </html>
   );

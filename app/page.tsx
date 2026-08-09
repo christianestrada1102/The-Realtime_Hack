@@ -1,7 +1,32 @@
 "use client";
 
+import { useEffect, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import dynamic from "next/dynamic";
+
+const ChromaticWaves = dynamic(
+  () => import("@/components/originkit/chromatic-waves"),
+  { ssr: false, loading: () => null }
+);
+const Globe = dynamic(
+  () => import("@/components/originkit/globe"),
+  { ssr: false, loading: () => <div style={{ width: "100%", height: "100%" }} /> }
+);
+
+const GlobeMemo = memo(function GlobeMemo() {
+  return (
+    <Globe
+      speed={1.5}
+      scale={8}
+      oceanColor="#0a0a0a"
+      outlineColor="#2a2a2a"
+      showOutline={true}
+      showGrid={false}
+      dots={{ color: "#ffffff", size: 2.5, density: 9, allDots: false }}
+      style={{ width: "100%", height: "100%" }}
+    />
+  );
+});
 
 const DURATIONS = [
   { label: "30 min", value: 30 },
@@ -9,69 +34,660 @@ const DURATIONS = [
   { label: "60 min", value: 60 },
 ];
 
+const HOW_IT_WORKS = [
+  { title: "Ana te entrevista",       desc: "Voz real. Preguntas técnicas. Sin piedad." },
+  { title: "El Observador presiona",  desc: "Una segunda IA detecta cuando bajas la guardia." },
+  { title: "Feedback inmediato",      desc: "Al terminar, sabes exactamente dónde fallaste." },
+];
+
+// Paleta centralizada — un solo lugar para ajustar legibilidad
+const C = {
+  white:    "#ffffff",
+  hi:       "#e4e4e4",   // texto importante secundario
+  mid:      "#aaaaaa",   // texto descriptivo normal
+  low:      "#777777",   // texto de apoyo
+  dim:      "#555555",   // labels, meta
+  xdim:     "#3a3a3a",   // fuentes, notas al pie
+  border:   "#2a2a2a",
+  borderLo: "#1e1e1e",
+};
+
+function useInView(ref: React.RefObject<Element | null>, rootMargin = "200px") {
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    if (!ref.current) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setInView(true); obs.disconnect(); } },
+      { rootMargin }
+    );
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [ref, rootMargin]);
+  return inView;
+}
+
 export default function Home() {
   const router = useRouter();
   const [duration, setDuration] = useState(45);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [loadingVisible, setLoadingVisible] = useState(true);
+  const [navVisible, setNavVisible] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
+
+  const heroSentinelRef = useRef<HTMLDivElement>(null);
+  const globeSentinelRef = useRef<HTMLDivElement>(null);
+  const heroInView = useInView(heroSentinelRef, "0px");
+  const globeInView = useInView(globeSentinelRef, "300px");
+
+  const heroTitleRef   = useRef<HTMLHeadingElement>(null);
+  const heroSubRef     = useRef<HTMLParagraphElement>(null);
+  const heroVersionRef = useRef<HTMLParagraphElement>(null);
+  const heroBtnRef     = useRef<HTMLButtonElement>(null);
+  const heroScrollRef  = useRef<HTMLDivElement>(null);
+  const problemLine1Ref = useRef<HTMLParagraphElement>(null);
+  const problemLine2Ref = useRef<HTMLParagraphElement>(null);
+  const problemLine3Ref = useRef<HTMLParagraphElement>(null);
+  const problemColsRef  = useRef<HTMLDivElement>(null);
+  const howSectionRef   = useRef<HTMLDivElement>(null);
+  const archSectionRef  = useRef<HTMLDivElement>(null);
+  const globeSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let ctx: { revert: () => void } | null = null;
+
+    const initGsap = async () => {
+      const { gsap } = await import("gsap");
+      const { ScrollTrigger } = await import("gsap/ScrollTrigger");
+      gsap.registerPlugin(ScrollTrigger);
+
+      gsap.fromTo("body", { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out" });
+
+      ctx = gsap.context(() => {
+        if (heroTitleRef.current) {
+          const text = heroTitleRef.current.textContent ?? "";
+          heroTitleRef.current.innerHTML = text
+            .split("")
+            .map((ch) => ch === " " ? " " : `<span style="display:inline-block;opacity:0;transform:translateY(20px)">${ch}</span>`)
+            .join("");
+          gsap.to(heroTitleRef.current.querySelectorAll("span"), {
+            opacity: 1, y: 0, duration: 0.5, stagger: 0.07, ease: "power2.out", delay: 0.2,
+          });
+        }
+
+        gsap.fromTo(heroSubRef.current,     { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4, delay: 0.65,  ease: "power2.out" });
+        gsap.fromTo(heroVersionRef.current, { opacity: 0 },        { opacity: 1,       duration: 0.4, delay: 0.9,   ease: "power2.out" });
+        gsap.fromTo(heroBtnRef.current,     { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4, delay: 1.05,  ease: "power2.out" });
+        gsap.fromTo(heroScrollRef.current,  { opacity: 0 },        { opacity: 1,       duration: 0.4, delay: 1.4 });
+
+        [problemLine1Ref, problemLine2Ref, problemLine3Ref].forEach((ref, i) => {
+          if (!ref.current) return;
+          gsap.fromTo(ref.current, { opacity: 0, y: 20 }, {
+            opacity: 1, y: 0, duration: 0.6, delay: i * 0.18, ease: "power2.out",
+            scrollTrigger: { trigger: ref.current, start: "top 82%" },
+          });
+        });
+
+        if (problemColsRef.current) {
+          gsap.fromTo(Array.from(problemColsRef.current.children), { opacity: 0, y: 12 }, {
+            opacity: 1, y: 0, duration: 0.4, stagger: 0.12, ease: "power2.out",
+            scrollTrigger: { trigger: problemColsRef.current, start: "top 82%" },
+          });
+        }
+
+        if (howSectionRef.current) {
+          gsap.fromTo(Array.from(howSectionRef.current.querySelectorAll(".how-col")), { opacity: 0, y: 16 }, {
+            opacity: 1, y: 0, duration: 0.5, stagger: 0.15, ease: "power2.out",
+            scrollTrigger: { trigger: howSectionRef.current, start: "top 80%" },
+          });
+        }
+
+        if (archSectionRef.current) {
+          gsap.fromTo(archSectionRef.current, { opacity: 0, y: 20 }, {
+            opacity: 1, y: 0, duration: 0.6, ease: "power2.out",
+            scrollTrigger: { trigger: archSectionRef.current, start: "top 80%" },
+          });
+        }
+
+        if (globeSectionRef.current) {
+          gsap.fromTo(globeSectionRef.current, { opacity: 0 }, {
+            opacity: 1, duration: 0.7, ease: "power2.out",
+            scrollTrigger: { trigger: globeSectionRef.current, start: "top 78%" },
+          });
+        }
+      });
+    };
+
+    const id = requestIdleCallback ? requestIdleCallback(initGsap) : setTimeout(initGsap, 100);
+    return () => {
+      if (typeof id === "number") cancelIdleCallback ? cancelIdleCallback(id) : clearTimeout(id);
+      ctx?.revert();
+      import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
+        ScrollTrigger.getAll().forEach((t) => t.kill());
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setModalOpen(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setNavVisible(window.scrollY > window.innerHeight * 0.6);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // IntersectionObserver para sección activa en navbar
+  useEffect(() => {
+    const ids = ["problema", "como", "arch"];
+    const observers: IntersectionObserver[] = [];
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const obs = new IntersectionObserver(
+        ([entry]) => { if (entry.isIntersecting) setActiveSection(id); },
+        { threshold: 0.4 }
+      );
+      obs.observe(el);
+      observers.push(obs);
+    });
+    return () => observers.forEach((o) => o.disconnect());
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const { gsap } = await import("gsap");
+      gsap.to(loadingRef.current, {
+        opacity: 0, duration: 0.8, ease: "power2.out",
+        onComplete: () => setLoadingVisible(false),
+      });
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   function handleStart() {
     router.push(`/session/test-session?duration=${duration}`);
   }
 
   return (
-    <main style={{ backgroundColor: "#0a0a0a", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 40, padding: 32 }}>
-      <div style={{ textAlign: "center" }}>
-        <h1 style={{ fontFamily: "Manuscribe, serif", fontSize: 40, color: "#fff", margin: 0 }}>Poised</h1>
-        <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555", marginTop: 8 }}>
-          Simulador de entrevistas tecnicas con presion real.
-        </p>
-      </div>
+    <>
+      {/* ── Loading screen ── */}
+      {loadingVisible && (
+        <div
+          ref={loadingRef}
+          style={{
+            position: "fixed", inset: 0, zIndex: 9999,
+            backgroundColor: "#0a0a0a",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            gap: 16,
+          }}
+        >
+          <span style={{ fontFamily: "Manuscribe, serif", fontSize: 36, color: C.white }}>
+            Poised
+          </span>
+          <div style={{ width: 120, height: 1, backgroundColor: "#1a1a1a", overflow: "hidden" }}>
+            <div style={{ height: "100%", backgroundColor: C.white, animation: "progress-fill 2s linear forwards" }} />
+          </div>
+        </div>
+      )}
 
-      {/* Duration selector */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-        <p style={{ fontFamily: "monospace", fontSize: 11, color: "#444", margin: 0 }}>
-          duracion de la sesion
-        </p>
-        <div style={{ display: "flex", gap: 8 }}>
-          {DURATIONS.map((d) => (
+      {/* ── Navbar ── */}
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 40px", height: 52,
+        backgroundColor: "rgba(10,10,10,0.72)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        opacity: navVisible ? 1 : 0,
+        pointerEvents: navVisible ? "auto" : "none",
+        transform: navVisible ? "translateY(0)" : "translateY(-8px)",
+        transition: "opacity 0.3s ease, transform 0.3s ease",
+      }}>
+        <span style={{ fontFamily: "Manuscribe, serif", fontSize: 18, color: C.white }}>
+          Poised
+        </span>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+          {[
+            { label: "El problema",   href: "#problema", id: "problema" },
+            { label: "Cómo funciona", href: "#como",     id: "como" },
+            { label: "Arquitectura",  href: "#arch",     id: "arch" },
+          ].map(({ label, href, id }) => {
+            const isActive = activeSection === id;
+            return (
+              <a
+                key={href}
+                href={href}
+                style={{
+                  fontFamily: "monospace", fontSize: 11,
+                  color: isActive ? C.white : C.low,
+                  textDecoration: "none", transition: "color 0.2s",
+                  display: "flex", flexDirection: "column", gap: 3,
+                  paddingBottom: 2,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = C.white)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = isActive ? C.white : C.low)}
+              >
+                {label}
+                <span style={{
+                  display: "block", height: 1, backgroundColor: C.white,
+                  width: isActive ? "100%" : "0%",
+                  transition: "width 300ms ease-out",
+                }} />
+              </a>
+            );
+          })}
+        </div>
+
+        <button
+          onClick={() => setModalOpen(true)}
+          style={{
+            background: "none", border: "1px solid #333", borderRadius: 4,
+            color: C.white, fontFamily: "monospace", fontSize: 11,
+            padding: "8px 20px", cursor: "pointer",
+            transition: "background 300ms ease, color 300ms ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = C.white;
+            e.currentTarget.style.color = "#000";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "none";
+            e.currentTarget.style.color = C.white;
+          }}
+        >
+          Iniciar entrevista
+        </button>
+      </nav>
+
+      <main style={{ backgroundColor: "#0a0a0a", color: C.white, opacity: loadingVisible ? 0 : 1, transition: "opacity 0.3s ease" }}>
+
+        {/* ── Hero ── */}
+        <section style={{
+          position: "relative", height: "100vh",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", overflow: "hidden",
+        }}>
+          <div ref={heroSentinelRef} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            {heroInView && (
+              <div style={{ position: "absolute", inset: 0, opacity: 0.12 }}>
+                <ChromaticWaves frequency={2} speed={3} bgColor="#0a0a0a" colors={["#ffffff"]} cellSize={20} />
+              </div>
+            )}
+          </div>
+
+          <div style={{ position: "relative", zIndex: 1, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+            <h1
+              ref={heroTitleRef}
+              style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(48px, 10vw, 96px)", color: C.white, margin: 0, lineHeight: 1 }}
+            >
+              Poised
+            </h1>
+
+            <p ref={heroSubRef} style={{ fontFamily: "monospace", fontSize: 13, color: C.mid, margin: 0, opacity: 0 }}>
+              Practica entrevistas tecnicas con presion real.
+            </p>
+
+            <p ref={heroVersionRef} style={{ fontFamily: "monospace", fontSize: 11, color: C.dim, margin: 0, opacity: 0 }}>
+              v1.0 · The Realtime Hackathon 2026
+            </p>
+
             <button
-              key={d.value}
-              onClick={() => setDuration(d.value)}
+              ref={heroBtnRef}
+              onClick={(e) => {
+                const btn = e.currentTarget;
+                btn.style.transform = "scale(0.97)";
+                setTimeout(() => { btn.style.transform = "scale(1)"; setModalOpen(true); }, 100);
+              }}
               style={{
-                background: "none",
-                border: `1px solid ${duration === d.value ? "#fff" : "#333"}`,
-                borderRadius: 6,
-                color: duration === d.value ? "#fff" : "#555",
-                fontFamily: "monospace",
-                fontSize: 13,
-                padding: "8px 18px",
-                cursor: "pointer",
-                transition: "border-color 0.15s, color 0.15s",
+                background: "none", border: "1px solid #333", borderRadius: 4,
+                color: C.white, fontFamily: "Manuscribe, serif", fontSize: 20,
+                padding: "16px 48px", cursor: "pointer", opacity: 0, marginTop: 8,
+                transition: "background 400ms ease, color 400ms ease, border-color 400ms ease, transform 100ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = C.white;
+                e.currentTarget.style.color = "#000";
+                e.currentTarget.style.borderColor = C.white;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "none";
+                e.currentTarget.style.color = C.white;
+                e.currentTarget.style.borderColor = "#333";
               }}
             >
-              {d.label}
+              Iniciar entrevista
             </button>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Start button */}
-      <button
-        onClick={handleStart}
-        style={{
-          background: "#fff",
-          border: "none",
-          borderRadius: 6,
-          color: "#000",
-          fontFamily: "monospace",
-          fontSize: 13,
-          padding: "12px 32px",
-          cursor: "pointer",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "#e4e4e7")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-      >
-        Iniciar entrevista
-      </button>
-    </main>
+          <div ref={heroScrollRef} style={{
+            position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: 0,
+          }}>
+            <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim }}>scroll</span>
+            <div style={{ width: 1, height: 40, backgroundColor: C.dim, animation: "scroll-line 1.6s ease-in-out infinite" }} />
+          </div>
+        </section>
+
+        {/* ── El problema ── */}
+        <section id="problema" style={{
+          height: "100vh", display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "0 24px", gap: 48,
+        }}>
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 8 }}>
+            <p ref={problemLine1Ref} style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(28px, 6vw, 52px)", color: C.white, margin: 0, opacity: 0 }}>
+              Leetcode no te prepara
+            </p>
+            <p ref={problemLine2Ref} style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(28px, 6vw, 52px)", color: C.low, margin: 0, opacity: 0 }}>
+              para los nervios.
+            </p>
+            <p ref={problemLine3Ref} style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(28px, 6vw, 52px)", color: C.white, margin: 0, opacity: 0, marginTop: 16 }}>
+              Poised si.
+            </p>
+          </div>
+
+          <div ref={problemColsRef} style={{
+            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: 32, maxWidth: 560, width: "100%",
+          }}>
+            {["Interrupciones reales", "Presion de tiempo", "Feedback inmediato"].map((label) => (
+              <div key={label} style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
+                <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>{label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Globe + Stats ── */}
+        <section ref={globeSectionRef} style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "80px 24px", gap: 64, opacity: 0,
+          flexWrap: "wrap", borderTop: `1px solid ${C.borderLo}`,
+        }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 32, minWidth: 200, maxWidth: 280 }}>
+            <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>El problema real</span>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+              {[
+                { num: "45%",  label: "de devs admite que los nervios afectan su desempeño" },
+                { num: "75%",  label: "de hiring managers dice que los nervios son el error más común" },
+                { num: "50%+", label: "peor desempeño cuando hay un observador presente" },
+              ].map(({ num, label }) => (
+                <div key={num} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 24, color: C.white, lineHeight: 1 }}>{num}</span>
+                  <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, lineHeight: 1.6 }}>{label}</span>
+                </div>
+              ))}
+            </div>
+
+            <span style={{ fontFamily: "monospace", fontSize: 10, color: C.xdim, lineHeight: 1.5 }}>
+              Fuente: Stack Overflow · The Ladders · NC State / Microsoft
+            </span>
+          </div>
+
+          <div ref={globeSentinelRef} style={{ width: 450, height: 450, maxWidth: "90vw", maxHeight: "90vw", position: "relative", flexShrink: 0 }}>
+            {globeInView && <GlobeMemo />}
+          </div>
+        </section>
+
+        {/* ── Cómo funciona ── */}
+        <section id="como" style={{
+          padding: "80px 24px", display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 48, borderTop: `1px solid ${C.borderLo}`,
+        }}>
+          <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0 }}>
+            Cómo funciona
+          </p>
+          <div
+            ref={howSectionRef}
+            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 0, maxWidth: 760, width: "100%" }}
+          >
+            {HOW_IT_WORKS.map((item, i) => (
+              <div
+                key={i}
+                className="how-col"
+                style={{
+                  borderTop: `1px solid ${C.border}`,
+                  borderRight: i < HOW_IT_WORKS.length - 1 ? `1px solid ${C.border}` : "none",
+                  padding: "24px 32px 24px 0",
+                  paddingLeft: i === 0 ? 0 : 32,
+                  display: "flex", flexDirection: "column", gap: 12, opacity: 0,
+                }}
+              >
+                <p style={{ fontFamily: "monospace", fontSize: 13, color: C.hi, margin: 0 }}>{item.title}</p>
+                <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.7 }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Arquitectura en tiempo real ── */}
+        <section id="arch" ref={archSectionRef} style={{
+          padding: "100px 24px", borderTop: `1px solid ${C.borderLo}`,
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 60, opacity: 0,
+        }}>
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 12 }}>
+            <h2 style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(24px, 4vw, 36px)", color: C.white, margin: 0 }}>
+              Cómo conviven las IAs
+            </h2>
+            <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0 }}>
+              Portal sincroniza todo en tiempo real.
+            </p>
+          </div>
+
+          <div style={{ maxWidth: 800, width: "100%", margin: "0 auto" }}>
+            {/* Fila superior: Tú → Canal Portal */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {/* Nodo: Tú */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low }}>mic</span>
+                </div>
+                <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>Tú</span>
+                <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 80 }}>
+                  Hablas por micrófono
+                </span>
+              </div>
+
+              {/* Conector */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, maxWidth: 160, padding: "0 8px" }}>
+                <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim, marginBottom: 4, whiteSpace: "nowrap" }}>
+                  Whisper transcribe
+                </span>
+                <div style={{ width: "100%", display: "flex", alignItems: "center" }}>
+                  <div style={{ flex: 1, height: 1, backgroundColor: C.border }} />
+                  <div style={{ width: 0, height: 0, borderTop: "4px solid transparent", borderBottom: "4px solid transparent", borderLeft: `6px solid ${C.dim}` }} />
+                </div>
+              </div>
+
+              {/* Nodo: Canal Portal */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.white}`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  animation: "portal-pulse 2.4s ease-in-out infinite",
+                }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 9, color: C.mid }}>⬤</span>
+                </div>
+                <span style={{ fontFamily: "monospace", fontSize: 12, color: C.white }}>Canal Portal</span>
+                <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 100 }}>
+                  Estado compartido en tiempo real
+                </span>
+              </div>
+            </div>
+
+            {/* Línea vertical central */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <div style={{ width: 1, height: 40, backgroundColor: C.border }} />
+            </div>
+
+            {/* Fila inferior: Ana | Observador */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 64, flexWrap: "wrap" }}>
+              {[
+                { id: "ana", label: "Ana",        role: "Entrevistadora principal",  note: "Responde, presiona, cambia de tema" },
+                { id: "obs", label: "Observador", role: "Segunda IA silenciosa",     note: "Detecta silencios, interrumpe cuando bajas la guardia" },
+              ].map(({ id, label, role, note }) => (
+                <div key={id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  <div style={{ width: 1, height: 24, backgroundColor: C.border }} />
+                  <div style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderTop: `6px solid ${C.dim}` }} />
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginTop: 4 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low }}>{id}</span>
+                    </div>
+                    <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>{label}</span>
+                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.low, textAlign: "center", maxWidth: 120 }}>{role}</span>
+                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim, textAlign: "center", maxWidth: 160 }}>{note}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Columnas explicativas */}
+          <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", borderTop: `1px solid ${C.borderLo}`, paddingTop: 48 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 32 }}>
+              {[
+                { title: "Portal como canal",       body: "Cada mensaje, cada transcripción y cada respuesta pasan por un canal Portal en tiempo real. No hay polling. No hay delay artificial." },
+                { title: "Dos agentes, un contexto", body: "Ana y el Observador comparten el mismo historial de conversación a través del canal. Cuando el Observador interrumpe, Ana lo sabe." },
+                { title: "Feedback en vivo",         body: "El canal registra timestamps, silencios y patrones. Al terminar, el análisis es sobre lo que realmente pasó, no sobre lo que recordaste." },
+              ].map(({ title, body }) => (
+                <div key={title} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <p style={{ fontFamily: "monospace", fontSize: 13, color: C.hi, margin: 0 }}>{title}</p>
+                  <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.8 }}>{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Footer ── */}
+        <footer style={{
+          borderTop: "1px solid #1a1a1a",
+          padding: "24px 40px",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          backgroundColor: "#0a0a0a",
+        }}>
+          <span style={{ fontFamily: "monospace", fontSize: 11, color: "#666" }}>
+            © 2026{" "}
+            <a
+              href="https://www.codebynas.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#aaa", textDecoration: "none", transition: "color 0.15s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#aaa")}
+            >
+              Christian Estrada
+            </a>
+          </span>
+          <span style={{ fontFamily: "monospace", fontSize: 11, color: "#666" }}>
+            <span style={{ fontFamily: "Manuscribe, serif", color: "#fff" }}>Poised</span>
+            {" · The Realtime Hackathon 2026"}
+          </span>
+        </footer>
+
+        <style>{`
+          @keyframes scroll-line {
+            0%   { transform: scaleY(0); transform-origin: top; }
+            50%  { transform: scaleY(1); transform-origin: top; }
+            51%  { transform: scaleY(1); transform-origin: bottom; }
+            100% { transform: scaleY(0); transform-origin: bottom; }
+          }
+          @keyframes progress-fill {
+            from { width: 0%; }
+            to   { width: 100%; }
+          }
+          @keyframes portal-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+            50%       { box-shadow: 0 0 0 6px rgba(255,255,255,0.08); }
+          }
+        `}</style>
+      </main>
+
+      {/* ── Modal Config ── */}
+      {modalOpen && (
+        <div
+          onClick={() => setModalOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 100,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            backgroundColor: "rgba(0,0,0,0.65)",
+            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#111", border: `1px solid ${C.border}`,
+              borderRadius: 8, padding: 40,
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 28,
+              position: "relative", minWidth: 300,
+            }}
+          >
+            <button
+              onClick={() => setModalOpen(false)}
+              style={{
+                position: "absolute", top: 16, right: 16,
+                background: "none", border: "none", color: C.low,
+                fontFamily: "monospace", fontSize: 16, cursor: "pointer",
+                lineHeight: 1, padding: 4, transition: "color 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = C.white)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = C.low)}
+            >
+              ✕
+            </button>
+
+            <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0 }}>
+              Configura tu sesión
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.low, margin: 0 }}>duración</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                {DURATIONS.map((d) => (
+                  <button
+                    key={d.value}
+                    onClick={() => setDuration(d.value)}
+                    style={{
+                      background: "none",
+                      border: `1px solid ${duration === d.value ? C.white : C.border}`,
+                      borderRadius: 6,
+                      color: duration === d.value ? C.white : C.mid,
+                      fontFamily: "monospace", fontSize: 13,
+                      padding: "8px 18px", cursor: "pointer",
+                      transition: "border-color 0.15s, color 0.15s",
+                    }}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleStart}
+              style={{
+                background: C.white, border: "none", borderRadius: 6,
+                color: "#000", fontFamily: "monospace", fontSize: 14,
+                padding: "12px 32px", cursor: "pointer", width: "100%",
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#e4e4e7")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = C.white)}
+            >
+              Comenzar
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

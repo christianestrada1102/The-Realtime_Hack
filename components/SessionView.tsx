@@ -15,9 +15,8 @@ type ChatContent = { text: string; role?: "user" | "interviewer" | "observer" };
 type Phase = "idle" | "speaking" | "listening" | "processing" | "ended";
 type HistoryEntry = { role: "user" | "interviewer"; content: string };
 
-const CODE_KEYWORDS = /implementa|escribe|código|función|algorithm|implementarías|codifica|define la función/i;
+const CODE_KEYWORDS = /implementa|escribe|código|función|algorithm|implementarías|codifica|define la función|resuelve|query|SQL|componente/i;
 
-// SVG noise data URI — subtle grain texture
 const NOISE_BG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`;
 
 export function SessionView({ sessionId }: { sessionId: string }) {
@@ -27,10 +26,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const { speak } = useAudioPlayer();
   const { startDetecting, stopDetecting } = useSilenceDetector();
 
-  // Detect query params (client-side only)
   const [textMode, setTextMode] = useState(false);
   const [textInput, setTextInput] = useState("");
-  const [totalSeconds, setTotalSeconds] = useState(2700); // default 45 min
+  const [totalSeconds, setTotalSeconds] = useState(2700);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setTextMode(params.get("mode") === "text");
@@ -41,13 +39,13 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [lastInterviewerMsg, setLastInterviewerMsg] = useState("");
-  const [msgKey, setMsgKey] = useState(0); // triggers fade-in animation
+  const [msgKey, setMsgKey] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [codeValue, setCodeValue] = useState("// Escribe tu solución aquí\n");
   const [waveformBars, setWaveformBars] = useState<number[]>([4, 4, 4, 4, 4]);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [remaining, setRemaining] = useState<number | null>(null); // seconds left, null until session starts
+  const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
 
@@ -66,7 +64,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     setHistoryDisplay(historyRef.current);
   }
 
-  // Countdown timer — only runs while session is active
   useEffect(() => {
     if (!sessionStarted || phase === "ended") return;
     if (startTimeRef.current === 0) startTimeRef.current = Date.now();
@@ -75,7 +72,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       const left = Math.max(0, totalSeconds - elapsed);
       setRemaining(left);
 
-      // 5-minute warning
       if (left <= 300 && !warned5MinRef.current) {
         warned5MinRef.current = true;
         const msg = "Por cierto, nos quedan unos 5 minutos — vamos terminando.";
@@ -86,7 +82,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         speak(msg);
       }
 
-      // Time's up
       if (left === 0 && !timeUpRef.current) {
         timeUpRef.current = true;
         clearInterval(t);
@@ -114,7 +109,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     return `${m}:${sec}`;
   }
 
-  // Auto-scroll transcript panel
   useEffect(() => {
     if (showTranscript) transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [historyDisplay, showTranscript]);
@@ -138,6 +132,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         return;
       }
       const reply: string = iData.response;
+      // Fix 2 — auto-open editor when reply contains code keywords
       if (iData.showEditor || CODE_KEYWORDS.test(reply)) setShowEditor(true);
       await send({ content: { text: reply, role: "interviewer" } });
       appendHistory({ role: "interviewer", content: reply });
@@ -195,11 +190,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     );
   }
 
-  // En modo texto no hay grabación ni detector de silencio —
-  // cuando Ana termina de hablar solo ponemos la fase en idle y esperamos Enter
-  startListeningRef.current = textMode
-    ? () => setPhase("idle")
-    : startListening;
+  startListeningRef.current = textMode ? () => setPhase("idle") : startListening;
 
   async function handleTextSubmit() {
     const text = textInput.trim();
@@ -241,7 +232,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     startInterview();
   }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Warn before closing tab/window
   useEffect(() => {
     if (!sessionStarted || phase === "ended") return;
     const onUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -249,7 +239,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     return () => window.removeEventListener("beforeunload", onUnload);
   }, [sessionStarted, phase]);
 
-  // Intercept internal link clicks → show custom modal instead of navigating
   useEffect(() => {
     if (!sessionStarted || phase === "ended") return;
     const onClick = (e: MouseEvent) => {
@@ -265,35 +254,24 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   }, [sessionStarted, phase]);
 
   function confirmLeave() {
-    stopDetecting();
-    cancelRecording();
-    setPhase("ended");
-    setPendingNavigation(null);
-    setShowFeedback(true);
+    stopDetecting(); cancelRecording();
+    setPhase("ended"); setPendingNavigation(null); setShowFeedback(true);
   }
-
-  function cancelLeave() {
-    setPendingNavigation(null);
-  }
-
+  function cancelLeave() { setPendingNavigation(null); }
   function handleEnd() {
-    stopDetecting();
-    cancelRecording();
-    setPhase("ended");
-    setShowFeedback(true);
+    stopDetecting(); cancelRecording();
+    setPhase("ended"); setShowFeedback(true);
   }
 
   const isSpeaking = phase === "speaking";
   const isListening = phase === "listening";
 
-  if (showFeedback) {
-    return <FeedbackScreen history={historyRef.current} />;
-  }
+  if (showFeedback) return <FeedbackScreen history={historyRef.current} />;
 
   return (
     <div style={{ backgroundColor: "#0a0a0a", minHeight: "100vh" }} className="flex flex-col text-white overflow-hidden">
 
-      {/* ── Header ── */}
+      {/* ── Header ── Fix 1 */}
       <header style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 20,
         height: 48, display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -302,33 +280,42 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         backdropFilter: "blur(12px)",
         borderBottom: "1px solid #1a1a1a",
       }}>
-        <span style={{ fontFamily: "Manuscribe, serif", fontSize: 16, color: "#fff", letterSpacing: "0.02em" }}>
+        <span style={{ fontFamily: "Manuscribe, serif", fontSize: 16, color: "#fff" }}>
           Poised
         </span>
-        <span style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>
+        <span style={{ fontFamily: "monospace", fontSize: 11, color: "#888" }}>
           Entrevista técnica · Mid
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <span style={{
-            fontFamily: "monospace", fontSize: 11,
-            color: remaining !== null && remaining <= 300 ? "#ef4444" : "#444",
+            fontFamily: "monospace", fontSize: 13, fontWeight: 500,
+            color: remaining !== null && remaining <= 300 ? "#ef4444" : "#fff",
+            transition: "color 200ms",
           }}>
             {remaining !== null ? formatTime(remaining) : "--:--"}
           </span>
           <button
             onClick={() => setShowTranscript(true)}
-            style={{ fontFamily: "monospace", fontSize: 11, color: "#555", background: "none", border: "none", cursor: "pointer" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#aaa")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+            style={{
+              fontFamily: "monospace", fontSize: 11, color: "#888",
+              background: "none", border: "none", cursor: "pointer",
+              transition: "color 200ms",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#888")}
           >
             Ver transcripcion
           </button>
           {phase !== "ended" && (
             <button
               onClick={handleEnd}
-              style={{ fontFamily: "inherit", fontSize: 13, color: "#555", background: "none", border: "none", cursor: "pointer" }}
+              style={{
+                fontFamily: "monospace", fontSize: 11, color: "#666",
+                background: "none", border: "none", cursor: "pointer",
+                transition: "color 200ms",
+              }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
             >
               Terminar
             </button>
@@ -339,57 +326,33 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       {/* ── Zona superior: Entrevistador (60%) ── */}
       <div style={{
         flex: "0 0 60vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 16,
-        paddingTop: 48,
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        gap: 16, paddingTop: 48,
         backgroundColor: "#111111",
-        backgroundImage: NOISE_BG,
-        backgroundRepeat: "repeat",
-        backgroundSize: "200px 200px",
+        backgroundImage: NOISE_BG, backgroundRepeat: "repeat", backgroundSize: "200px 200px",
         borderBottom: "1px solid #1a1a1a",
         position: "relative",
       }}>
-
-        {/* Avatar con anillo de estado */}
         <div style={{ position: "relative", width: 120, height: 120 }}>
-          {/* Anillo exterior animado */}
           {(isSpeaking || isListening) && (
             <div style={{
-              position: "absolute",
-              inset: -8,
-              borderRadius: "50%",
+              position: "absolute", inset: -8, borderRadius: "50%",
               border: `2px solid ${isSpeaking ? "#ffffff" : "#22c55e"}`,
-              opacity: 0.5,
-              animation: "ring-pulse 1.6s ease-in-out infinite",
+              opacity: 0.5, animation: "ring-pulse 1.6s ease-in-out infinite",
             }} />
           )}
-          {/* Círculo avatar */}
           <div style={{
-            width: 120,
-            height: 120,
-            borderRadius: "50%",
-            backgroundColor: "#1a1a1a",
-            border: "1px solid #333",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            width: 120, height: 120, borderRadius: "50%",
+            backgroundColor: "#1a1a1a", border: "1px solid #333",
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            <span style={{
-              fontFamily: "Manuscribe, serif",
-              fontSize: 48,
-              color: "#fff",
-              lineHeight: 1,
-              userSelect: "none",
-            }}>
+            <span style={{ fontFamily: "Manuscribe, serif", fontSize: 48, color: "#fff", lineHeight: 1, userSelect: "none" }}>
               A
             </span>
           </div>
         </div>
 
-        {/* Nombre y cargo */}
         <div style={{ textAlign: "center" }}>
           <p style={{ fontFamily: "Manuscribe, serif", fontSize: 20, color: "#fff", margin: 0 }}>Ana</p>
           <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", margin: "4px 0 0" }}>
@@ -397,21 +360,15 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           </p>
         </div>
 
-        {/* Último mensaje — subtítulo con fade-in */}
         <div style={{ maxWidth: 480, textAlign: "center", minHeight: 44, padding: "0 24px" }}>
           {lastInterviewerMsg && (
             <p
               key={msgKey}
               style={{
-                fontFamily: "monospace",
-                fontSize: 13,
-                color: "#888",
-                lineHeight: 1.6,
-                margin: 0,
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
+                fontFamily: "monospace", fontSize: 13, color: "#888",
+                lineHeight: 1.6, margin: 0,
+                display: "-webkit-box", WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical", overflow: "hidden",
                 animation: "fade-in 0.4s ease",
               }}
             >
@@ -420,7 +377,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           )}
         </div>
 
-        {/* Error */}
         {error && (
           <p style={{ fontFamily: "monospace", fontSize: 11, color: "#f87171", position: "absolute", bottom: 16 }}>
             {error}
@@ -431,18 +387,13 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       {/* ── Zona inferior: Usuario (40%) ── */}
       <div style={{
         flex: "0 0 40vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 24,
-        backgroundColor: "#0a0a0a",
-        padding: "0 24px",
-        position: "relative",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        gap: 24, backgroundColor: "#0a0a0a",
+        padding: "0 24px", position: "relative",
       }}>
 
         {textMode && !showEditor ? (
-          /* Modo texto — input simple, salta Whisper */
           <div style={{ width: "100%", maxWidth: 560, display: "flex", gap: 8, alignItems: "center" }}>
             <input
               type="text"
@@ -452,30 +403,18 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               placeholder="Escribe tu respuesta..."
               disabled={phase === "processing" || phase === "speaking" || phase === "ended"}
               style={{
-                flex: 1,
-                backgroundColor: "#111",
-                border: "1px solid #333",
-                borderRadius: 6,
-                color: "#fff",
-                fontFamily: "monospace",
-                fontSize: 13,
-                padding: "8px 12px",
-                outline: "none",
+                flex: 1, backgroundColor: "#111", border: "1px solid #333",
+                borderRadius: 6, color: "#fff", fontFamily: "monospace",
+                fontSize: 13, padding: "8px 12px", outline: "none",
               }}
             />
             <button
               onClick={handleTextSubmit}
               disabled={phase === "processing" || phase === "speaking" || phase === "ended"}
               style={{
-                fontFamily: "monospace",
-                fontSize: 11,
-                color: "#555",
-                background: "none",
-                border: "1px solid #333",
-                borderRadius: 6,
-                padding: "8px 12px",
-                cursor: "pointer",
-                flexShrink: 0,
+                fontFamily: "monospace", fontSize: 11, color: "#555",
+                background: "none", border: "1px solid #333", borderRadius: 6,
+                padding: "8px 12px", cursor: "pointer", flexShrink: 0,
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#aaa")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
@@ -484,29 +423,28 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             </button>
           </div>
         ) : showEditor ? (
-          /* Editor de código — reemplaza zona inferior */
           <div style={{
             width: "100%", maxWidth: 640,
-            border: "1px solid #222",
-            borderRadius: 8,
+            border: "1px solid #222", borderRadius: 8,
             backgroundColor: "#0d0d0d",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
+            display: "flex", flexDirection: "column", overflow: "hidden",
           }}>
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "8px 12px",
-              borderBottom: "1px solid #1a1a1a",
+              padding: "8px 12px", borderBottom: "1px solid #1a1a1a",
             }}>
-              <span style={{ fontFamily: "monospace", fontSize: 11, color: "#444" }}>
+              <span style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>
                 // Escribe tu solucion
               </span>
               <button
                 onClick={() => setShowEditor(false)}
-                style={{ fontFamily: "monospace", fontSize: 11, color: "#444", background: "none", border: "none", cursor: "pointer" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#888")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#444")}
+                style={{
+                  fontFamily: "monospace", fontSize: 11, color: "#555",
+                  background: "none", border: "none", cursor: "pointer",
+                  transition: "color 200ms",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
               >
                 cerrar
               </button>
@@ -516,114 +454,94 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             </div>
           </div>
         ) : (
-          /* Estado normal — indicador + waveform */
           <>
-            {/* Indicador de estado */}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{
                 width: 6, height: 6, borderRadius: "50%",
                 backgroundColor:
                   isListening ? "#ef4444" :
-                  phase === "processing" || isSpeaking ? "#ffffff" :
-                  phase === "ended" ? "#333" : "#333",
+                  phase === "processing" || isSpeaking ? "#ffffff" : "#333",
                 animation: (isListening || isSpeaking || phase === "processing")
                   ? "dot-pulse 1.2s ease-in-out infinite" : "none",
                 flexShrink: 0,
               }} />
-              <span style={{ fontFamily: "monospace", fontSize: 12, color: "#555" }}>
-                {isListening
-                  ? "Grabando..."
-                  : phase === "processing"
-                  ? "Ana esta respondiendo..."
-                  : isSpeaking
-                  ? "Ana esta respondiendo..."
-                  : phase === "ended"
-                  ? "Entrevista finalizada"
+              <span style={{ fontFamily: "monospace", fontSize: 12, color: "#666" }}>
+                {isListening ? "Grabando..."
+                  : phase === "processing" || isSpeaking ? "Ana esta respondiendo..."
+                  : phase === "ended" ? "Entrevista finalizada"
                   : "Tu turno"}
               </span>
             </div>
 
-            {/* Waveform — solo visible al grabar */}
             <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              height: 44,
-              opacity: isListening ? 1 : 0,
-              transition: "opacity 0.3s ease",
+              display: "flex", alignItems: "center", gap: 5, height: 44,
+              opacity: isListening ? 1 : 0, transition: "opacity 0.3s ease",
             }}>
               {waveformBars.map((h, i) => (
                 <div key={i} style={{
-                  width: 3,
-                  height: h,
-                  backgroundColor: "#ffffff",
-                  borderRadius: 2,
-                  transition: "height 0.1s ease",
+                  width: 3, height: h, backgroundColor: "#ffffff",
+                  borderRadius: 2, transition: "height 0.1s ease",
                 }} />
               ))}
             </div>
           </>
         )}
 
-        {/* Botón abrir editor — esquina inferior derecha */}
+        {/* Fix 2 — Botón editor más visible */}
         {!showEditor && phase !== "ended" && (
           <button
             onClick={() => setShowEditor(true)}
             style={{
               position: "absolute", bottom: 20, right: 24,
-              fontFamily: "monospace", fontSize: 11, color: "#333",
-              background: "none", border: "1px solid #222", borderRadius: 6,
-              padding: "4px 10px", cursor: "pointer",
+              fontFamily: "monospace", fontSize: 11, color: "#888",
+              background: "none", border: "1px solid #444", borderRadius: 6,
+              padding: "6px 14px", cursor: "pointer", transition: "color 200ms, border-color 200ms",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "#888"; e.currentTarget.style.borderColor = "#444"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "#333"; e.currentTarget.style.borderColor = "#222"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "#fff"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "#888"; e.currentTarget.style.borderColor = "#444"; }}
           >
-            + codigo
+            Editor de código
           </button>
         )}
       </div>
 
-      {/* ── Panel de transcripcion (slide-in desde la derecha) ── */}
+      {/* ── Panel de transcripcion ── Fix 3 */}
       <div style={{
-        position: "fixed", top: 0, right: 0, bottom: 0,
-        width: 360,
-        backgroundColor: "#0f0f0f",
-        borderLeft: "1px solid #222",
-        zIndex: 30,
-        display: "flex",
-        flexDirection: "column",
+        position: "fixed", top: 0, right: 0, bottom: 0, width: 360,
+        backgroundColor: "#0f0f0f", borderLeft: "2px solid #222",
+        zIndex: 30, display: "flex", flexDirection: "column",
         transform: showTranscript ? "translateX(0)" : "translateX(100%)",
         transition: "transform 0.25s ease",
       }}>
-        {/* Panel header */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 20px", height: 48,
-          borderBottom: "1px solid #1a1a1a",
-          flexShrink: 0,
+          borderBottom: "1px solid #1a1a1a", flexShrink: 0,
         }}>
-          <span style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>transcripcion</span>
+          <span style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>Transcripción</span>
           <button
             onClick={() => setShowTranscript(false)}
-            style={{ fontFamily: "monospace", fontSize: 13, color: "#444", background: "none", border: "none", cursor: "pointer" }}
+            style={{
+              fontFamily: "monospace", fontSize: 18, color: "#555",
+              background: "none", border: "none", cursor: "pointer",
+              lineHeight: 1, transition: "color 200ms",
+            }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#444")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
           >
-            x
+            ×
           </button>
         </div>
-        {/* Messages */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px", display: "flex", flexDirection: "column" }}>
           {historyDisplay.map((m, i) => (
-            <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <span style={{ fontFamily: "monospace", fontSize: 10, color: "#3f3f46" }}>
-                {m.role === "user" ? "tu" : "ana"}
+            <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
+              <span style={{ fontFamily: "monospace", fontSize: 10, color: "#555" }}>
+                {m.role === "user" ? "tú" : "ana"}
               </span>
               <span style={{
-                fontFamily: "monospace",
-                fontSize: 12,
-                color: m.role === "user" ? "#e4e4e7" : "#71717a",
-                lineHeight: 1.6,
+                fontFamily: "monospace", fontSize: 11,
+                color: m.role === "user" ? "#fff" : "#666",
+                lineHeight: 1.7,
               }}>
                 {m.content}
               </span>
@@ -637,17 +555,12 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       {pendingNavigation && (
         <div style={{
           position: "fixed", inset: 0, zIndex: 50,
-          backgroundColor: "rgba(0,0,0,0.85)",
-          backdropFilter: "blur(4px)",
+          backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <div style={{
-            backgroundColor: "#111111",
-            border: "1px solid #222",
-            borderRadius: 8,
-            padding: 32,
-            maxWidth: 400,
-            width: "calc(100% - 48px)",
+            backgroundColor: "#111111", border: "1px solid #222",
+            borderRadius: 8, padding: 32, maxWidth: 400, width: "calc(100% - 48px)",
           }}>
             <p style={{ fontFamily: "Manuscribe, serif", fontSize: 20, color: "#fff", margin: 0 }}>
               ¿Abandonar la entrevista?
@@ -659,9 +572,8 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               <button
                 onClick={cancelLeave}
                 style={{
-                  backgroundColor: "#fff", color: "#000",
-                  border: "none", borderRadius: 6,
-                  fontSize: 13, padding: "10px 20px", cursor: "pointer",
+                  backgroundColor: "#fff", color: "#000", border: "none",
+                  borderRadius: 6, fontSize: 13, padding: "10px 20px", cursor: "pointer",
                 }}
               >
                 Continuar entrevista
@@ -672,6 +584,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                   backgroundColor: "transparent", color: "#555",
                   border: "1px solid #333", borderRadius: 6,
                   fontSize: 13, padding: "10px 20px", cursor: "pointer",
+                  transition: "color 200ms",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#aaa")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
@@ -683,7 +596,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         </div>
       )}
 
-      {/* CSS keyframes */}
       <style>{`
         @keyframes ring-pulse {
           0%, 100% { transform: scale(1); opacity: 0.5; }
