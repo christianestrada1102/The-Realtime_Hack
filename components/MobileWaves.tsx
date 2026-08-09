@@ -66,9 +66,9 @@ export default function MobileWaves() {
     const CELL       = 16
     const FREQ       = 0.93
     const SPEED      = 0.15
-    const GAMMA      = 2.47   // pow curve — kills mid tones, keeps peaks
-    const BIAS       = -0.15  // paletteBias — clips small dots to invisible
-    const MAX_RADIUS = CELL * 0.5
+    const GAMMA      = 1.2    // softer curve — más puntos visibles
+    const BIAS       = 0.1    // positivo — empuja puntos a ser más grandes
+    const MAX_RADIUS = CELL * 0.6
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -94,11 +94,11 @@ export default function MobileWaves() {
 
           // Palette bias + radius mapping (matches dotFragmentShader radius calc)
           const r = Math.max(0, Math.min(1, gray + BIAS)) * MAX_RADIUS
-          if (r < 0.4) continue  // skip invisible dots — major perf win
+          if (r < 0.3) continue
 
           ctx.beginPath()
           ctx.arc(i * CELL, j * CELL, r, 0, Math.PI * 2)
-          ctx.fillStyle = 'rgba(255,255,255,0.9)'
+          ctx.fillStyle = 'rgba(255,255,255,1)'
           ctx.fill()
         }
       }
@@ -125,7 +125,7 @@ export default function MobileWaves() {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.15,
+        opacity: 0.45,
       }}
     />
   )
