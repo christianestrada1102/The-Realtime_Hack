@@ -66,9 +66,9 @@ export default function MobileWaves() {
     const CELL       = 16
     const FREQ       = 0.93
     const SPEED      = 0.15
-    const GAMMA      = 1.2    // softer curve — más puntos visibles
-    const BIAS       = 0.1    // positivo — empuja puntos a ser más grandes
-    const MAX_RADIUS = CELL * 0.6
+    const GAMMA      = 2.47   // aplasta mid-tones, solo los picos crean puntos
+    const BIAS       = -0.15  // recorta los puntos pequeños → efecto de ondas
+    const MAX_RADIUS = CELL * 0.5
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -87,9 +87,10 @@ export default function MobileWaves() {
           // Combine fBm with a time-shifted copy to fake the 3D snoise(vec3(uv, t))
           const n1 = fbm(ux + t * SPEED * 0.4, uy + t * SPEED * 0.3)
           const n2 = fbm(ux + 5.2 + t * SPEED * 0.3, uy + 1.3 + t * SPEED * 0.4)
-          let gray = (n1 * 0.6 + n2 * 0.4)
+          // Normalize blend to [0,1] — fBm output is ~[0, 0.875]
+          let gray = Math.min(1, (n1 * 0.6 + n2 * 0.4) / 0.875)
 
-          // Apply gamma curve (crushes mid tones like the shader does)
+          // Gamma crushes mid-tones: noise=0.5 → 0.174 (tiny dot), noise=0.9 → 0.77 (big dot)
           gray = Math.pow(Math.max(0.0001, gray), GAMMA)
 
           // Palette bias + radius mapping (matches dotFragmentShader radius calc)
@@ -125,7 +126,7 @@ export default function MobileWaves() {
         height: '100%',
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.45,
+        opacity: 0.7,
       }}
     />
   )
