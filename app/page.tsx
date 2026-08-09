@@ -417,11 +417,17 @@ export default function Home() {
           </div>
 
           <div ref={problemColsRef} style={{
-            display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: 32, maxWidth: 560, width: "100%",
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+            gap: 0, maxWidth: 560, width: "100%",
           }}>
-            {["Interrupciones reales", "Presion de tiempo", "Feedback inmediato"].map((label) => (
-              <div key={label} style={{ borderTop: `1px solid ${C.border}`, paddingTop: 16 }}>
+            {["Interrupciones reales", "Presion de tiempo", "Feedback inmediato"].map((label, i, arr) => (
+              <div key={label} style={{
+                borderTop: `1px solid ${C.border}`,
+                borderBottom: isMobile && i < arr.length - 1 ? `1px solid ${C.border}` : "none",
+                padding: isMobile ? "16px 0" : "16px 0 0",
+                textAlign: isMobile ? "center" : "left",
+              }}>
                 <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>{label}</span>
               </div>
             ))}
