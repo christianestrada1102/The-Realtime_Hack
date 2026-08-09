@@ -255,7 +255,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
 
   function confirmLeave() {
     stopDetecting(); cancelRecording();
-    setPhase("ended"); setPendingNavigation(null); setShowFeedback(true);
+    const dest = pendingNavigation;
+    setPendingNavigation(null);
+    setPhase("ended");
+    if (dest) router.push(dest);
   }
   function cancelLeave() { setPendingNavigation(null); }
   function handleEnd() {
