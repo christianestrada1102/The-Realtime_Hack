@@ -11,17 +11,20 @@ export async function POST(req: NextRequest) {
   if (!audio || !(audio instanceof Blob)) {
     return NextResponse.json({ error: "Missing audio field" }, { status: 400 });
   }
+  const lang = (form.get("lang") as string | null) === "en" ? "en" : "es";
+
+  const domainPrompt =
+    lang === "en"
+      ? "Technical programming interview in English. Common terms: function, array, object, class, variable, algorithm, complexity, O(n), recursion, iteration, useState, useEffect, async, await, Promise, API, REST, SQL, index, pointer, stack, queue, tree, graph, node, heap, hash, backend, frontend, deployment, TypeScript, JavaScript, Python, Java."
+      : "Entrevista técnica de programación en español. Términos comunes: función, array, objeto, clase, variable, algoritmo, complejidad, O(n), recursión, iteración, useState, useEffect, async, await, Promise, API, REST, SQL, índice, puntero, stack, queue, árbol, grafo, nodo, heap, hash, backend, frontend, deployment, TypeScript, JavaScript, Python, Java.";
 
   // Forward to OpenRouter Whisper as multipart/form-data
   const outForm = new FormData();
   outForm.append("file", audio, "audio.webm");
   outForm.append("model", "openai/whisper-large-v3");
-  outForm.append("language", "es");
+  outForm.append("language", lang);
   // Domain prompt helps Whisper recognize technical vocabulary correctly
-  outForm.append(
-    "prompt",
-    "Entrevista técnica de programación en español. Términos comunes: función, array, objeto, clase, variable, algoritmo, complejidad, O(n), recursión, iteración, useState, useEffect, async, await, Promise, API, REST, SQL, índice, puntero, stack, queue, árbol, grafo, nodo, heap, hash, backend, frontend, deployment, TypeScript, JavaScript, Python, Java."
-  );
+  outForm.append("prompt", domainPrompt);
   outForm.append("temperature", "0.2");
 
   const res = await fetch("https://openrouter.ai/api/v1/audio/transcriptions", {
