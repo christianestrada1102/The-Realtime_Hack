@@ -53,6 +53,12 @@ const DURATIONS = [
   { label: "60 min", value: 60 },
 ];
 
+const LEVELS = [
+  { label: "Junior", value: "junior" },
+  { label: "Mid",    value: "mid" },
+  { label: "Senior", value: "senior" },
+];
+
 
 // Paleta centralizada — un solo lugar para ajustar legibilidad
 const C = {
@@ -100,6 +106,8 @@ export default function Home() {
   const isMobile = bp === "mobile";
   const isTablet = bp === "tablet";
   const [duration, setDuration] = useState(45);
+  const [level, setLevel] = useState("mid");
+  const [role, setRole] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [loadingVisible, setLoadingVisible] = useState(true);
   const [navVisible, setNavVisible] = useState(false);
@@ -271,7 +279,9 @@ export default function Home() {
 
   function handleStart() {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    router.push(`/session/${id}?duration=${duration}`);
+    const params = new URLSearchParams({ duration: String(duration), level });
+    if (role.trim()) params.set("role", role.trim());
+    router.push(`/session/${id}?${params.toString()}`);
   }
 
   return (
@@ -296,6 +306,16 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── Lang toggle flotante (visible antes de hacer scroll) ── */}
+      <div style={{
+        position: "fixed", top: 18, right: isMobile ? 20 : 40, zIndex: 49,
+        opacity: navVisible ? 0 : 1,
+        pointerEvents: navVisible ? "none" : "auto",
+        transition: "opacity 0.3s ease",
+      }}>
+        <LangToggle lang={lang} toggle={toggle} />
+      </div>
 
       {/* ── Navbar ── */}
       <nav style={{
@@ -958,6 +978,50 @@ export default function Home() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.low, margin: 0 }}>nivel</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                {LEVELS.map((l) => (
+                  <button
+                    key={l.value}
+                    onClick={() => setLevel(l.value)}
+                    style={{
+                      background: "none",
+                      border: `1px solid ${level === l.value ? C.white : C.border}`,
+                      borderRadius: 6,
+                      color: level === l.value ? C.white : C.mid,
+                      fontFamily: "monospace", fontSize: 13,
+                      padding: "8px 18px", cursor: "pointer",
+                      transition: "border-color 0.15s, color 0.15s",
+                    }}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.low, margin: 0 }}>
+                ¿Para qué posición practicas?
+              </p>
+              <input
+                type="text"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="ej. Frontend Engineer en Stripe, Backend en startup LATAM..."
+                style={{
+                  background: "#0a0a0a", border: "1px solid #333", borderRadius: 4,
+                  color: C.white, fontFamily: "monospace", fontSize: 13,
+                  padding: "10px 14px", outline: "none", width: "100%",
+                  transition: "border-color 0.15s",
+                  boxSizing: "border-box",
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = C.white)}
+                onBlur={(e) => (e.currentTarget.style.borderColor = "#333")}
+              />
             </div>
 
             <button
