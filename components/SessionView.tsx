@@ -282,9 +282,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     setPhase("listening");
     const stream = await startRecording();
     if (!stream) { setPhase("idle"); return; }
-    // iOS (no AGC): lower threshold. Chrome/PC (AGC normalized): original threshold.
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    // Safari iOS (no AGC): lower threshold. Chrome iOS + all others (AGC): original threshold.
+    const isSafariIOS = !/CriOS/.test(navigator.userAgent) &&
+      (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
     startDetecting(
       stream,
       async () => {
@@ -299,7 +300,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       },
       () => { cancelRecording(); startListeningRef.current(); },
       (bars) => setWaveformBars(bars),
-      isIOS ? 8 : 15
+      isSafariIOS ? 8 : 15
     );
   }
 

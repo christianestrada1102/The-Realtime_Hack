@@ -3,18 +3,17 @@
 import { useRef } from "react";
 
 const SILENCE_DURATION_MS = 1500;
-const NO_SPEECH_TIMEOUT_MS = 5000;
+const GRACE_PERIOD_MS = 1500; // let mic settle before detecting silence
+const STUCK_TIMEOUT_MS = 12000; // failsafe: if always noisy, force onSilence anyway
 const NUM_BARS = 5;
 
 export function useSilenceDetector() {
   const contextRef = useRef<AudioContext | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const silenceSinceRef = useRef<number | null>(null);
-  const everSpokeRef = useRef(false);
 
-  // Call this during a direct user gesture (tap) to pre-warm the AudioContext.
-  // Chrome Android requires the AudioContext to be created/resumed from a user gesture;
-  // creating it later (in an async callback) leaves it suspended and the analyser reads zeros.
+  // Call from a direct user gesture (tap) to pre-warm the AudioContext.
+  // Chrome iOS / Chrome Android require the context to be created from a gesture.
   function warmAudioContext() {
     try {
       if (contextRef.current && contextRef.current.state !== "closed") {
@@ -27,24 +26,19 @@ export function useSilenceDetector() {
     } catch {}
   }
 
-  function stop() {
+  function stopInterval() {
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    // Don't close the context — keep it warm for the next startDetecting call
-    if (contextRef.current) {
-      contextRef.current.suspend().catch(() => {});
-    }
   }
 
   function startDetecting(
     stream: MediaStream,
     onSilence: () => void,
-    onCancel: () => void,
+    _onCancel: () => void, // kept for API compat — grace period replaces cancel logic
     onVolume?: (bars: number[]) => void,
     silenceThreshold = 15
   ) {
-    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    stopInterval();
 
-    // Reuse pre-warmed context if available, otherwise create fresh
     let ctx = contextRef.current;
     if (!ctx || ctx.state === "closed") {
       ctx = new AudioContext();
@@ -59,13 +53,14 @@ export function useSilenceDetector() {
 
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
     silenceSinceRef.current = null;
-    everSpokeRef.current = false;
     const startTime = Date.now();
 
     intervalRef.current = setInterval(() => {
       analyser.getByteFrequencyData(dataArray);
       const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+      const elapsed = Date.now() - startTime;
 
+      // Waveform bars
       if (onVolume) {
         const chunkSize = Math.floor(dataArray.length / NUM_BARS);
         const bars = Array.from({ length: NUM_BARS }, (_, i) => {
@@ -76,25 +71,30 @@ export function useSilenceDetector() {
         onVolume(bars);
       }
 
+      // Grace period — don't act yet, mic is settling
+      if (elapsed < GRACE_PERIOD_MS) return;
+
+      // Failsafe — if stuck for too long (constant noise), force send
+      if (elapsed > STUCK_TIMEOUT_MS) { stopInterval(); onSilence(); return; }
+
       if (avg >= silenceThreshold) {
-        everSpokeRef.current = true;
+        // User is speaking — reset silence timer
         silenceSinceRef.current = null;
         return;
       }
 
-      if (!everSpokeRef.current) {
-        if (Date.now() - startTime > NO_SPEECH_TIMEOUT_MS) { stop(); onCancel(); }
-        return;
-      }
-
+      // Below threshold — accumulate silence
       if (silenceSinceRef.current === null) { silenceSinceRef.current = Date.now(); return; }
 
-      if (Date.now() - silenceSinceRef.current >= SILENCE_DURATION_MS) { stop(); onSilence(); }
+      if (Date.now() - silenceSinceRef.current >= SILENCE_DURATION_MS) {
+        stopInterval();
+        onSilence();
+      }
     }, 100);
   }
 
   function stopDetecting() {
-    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    stopInterval();
     if (contextRef.current && contextRef.current.state !== "closed") {
       contextRef.current.close().catch(() => {});
       contextRef.current = null;

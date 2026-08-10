@@ -31,15 +31,16 @@ export function useVoiceRecorder() {
 
     let stream: MediaStream;
     try {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const isChromeIOS = /CriOS/.test(navigator.userAgent);
+      const isSafariIOS = !isChromeIOS && (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
       stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
-          // iOS has hardware-level processing — disabling these avoids AGC pumping in silence.
-          // Chrome Android needs noiseSuppression to keep ambient noise below threshold.
-          noiseSuppression: !isIOS,
-          autoGainControl: !isIOS,
+          // Safari iOS: disable AGC/NS — hardware handles it, AGC pumps in silence.
+          // Chrome iOS + all others: keep AGC/NS on for proper noise floor.
+          noiseSuppression: !isSafariIOS,
+          autoGainControl: !isSafariIOS,
           channelCount: 1,
         },
       });
