@@ -362,6 +362,19 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           >
             {isMobile ? "≡" : "Ver transcripcion"}
           </button>
+          {!isMobile && (
+            <a
+              href="/historial"
+              style={{
+                fontFamily: "monospace", fontSize: 11, color: "#555",
+                textDecoration: "none", transition: "color 200ms",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+            >
+              Historial
+            </a>
+          )}
           {phase !== "ended" && (
             <button
               onClick={handleEnd}

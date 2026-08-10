@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useBreakpoint } from "@/lib/useIsMobile";
 import type { FeedbackData } from "@/app/api/feedback/route";
 
@@ -247,17 +248,15 @@ export function FeedbackScreen({ history, duration }: Props) {
                 Nueva entrevista
               </button>
               <div style={{ marginTop: 16 }}>
-                <a
+                <Link
                   href="/historial"
                   style={{
                     fontFamily: "monospace", fontSize: 11, color: "#555",
-                    textDecoration: "none", transition: "color 200ms",
+                    textDecoration: "none",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "#888")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
                 >
                   Ver historial →
-                </a>
+                </Link>
               </div>
             </div>
           </div>
