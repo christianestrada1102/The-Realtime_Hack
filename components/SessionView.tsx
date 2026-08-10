@@ -97,7 +97,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
   const { lang, t } = useLang();
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(!isMobile);
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
@@ -282,6 +282,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     setPhase("listening");
     const stream = await startRecording();
     if (!stream) { setPhase("idle"); return; }
+    // iOS (no AGC): lower threshold. Chrome/PC (AGC normalized): original threshold.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     startDetecting(
       stream,
       async () => {
@@ -295,7 +298,8 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         }
       },
       () => { cancelRecording(); startListeningRef.current(); },
-      (bars) => setWaveformBars(bars)
+      (bars) => setWaveformBars(bars),
+      isIOS ? 8 : 15
     );
   }
 
@@ -341,7 +345,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (startedRef.current) return;
     if (status !== "ready") return;
-    if (!audioUnlocked && !textMode) return; // wait for user gesture on all browsers
+    if (!audioUnlocked && !textMode) return;
     startedRef.current = true;
     setSessionStarted(true);
     startInterview();
@@ -431,7 +435,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
 
   // iOS requires audio to be triggered from a direct user gesture.
   // Show a tap gate on mobile so we can unlock the audio engine before starting.
-  if (!audioUnlocked && !textMode) {
+  if (isMobile && !audioUnlocked && !textMode) {
     return (
       <div style={{
         backgroundColor: "#0a0a0a", minHeight: "100vh",
