@@ -327,32 +327,45 @@ export default function Home() {
           </div>
         )}
 
-        {/* Desktop CTA / Mobile hamburger */}
+        {/* Desktop CTA / Mobile: CTA + hamburger */}
         {isMobile ? (
-          <button
-            onClick={() => setMobileMenuOpen((o) => !o)}
-            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              display: "flex", flexDirection: "column", justifyContent: "center",
-              gap: 5, padding: 4, width: 28, height: 28,
-            }}
-          >
-            {mobileMenuOpen ? (
-              /* X */
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <line x1="1" y1="1" x2="17" y2="17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="17" y1="1" x2="1" y2="17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            ) : (
-              /* Hamburger */
-              <>
-                <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
-                <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
-                <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
-              </>
-            )}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <button
+              onClick={() => setModalOpen(true)}
+              style={{
+                background: "none", border: "1px solid #333", borderRadius: 4,
+                color: C.white, fontFamily: "monospace", fontSize: 11,
+                padding: "7px 16px", cursor: "pointer",
+                transition: "background 200ms, color 200ms",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.white; e.currentTarget.style.color = "#000"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.white; }}
+            >
+              Iniciar
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                display: "flex", flexDirection: "column", justifyContent: "center",
+                gap: 5, padding: 4, width: 28, height: 28,
+              }}
+            >
+              {mobileMenuOpen ? (
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <line x1="1" y1="1" x2="17" y2="17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="17" y1="1" x2="1" y2="17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <>
+                  <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
+                  <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
+                  <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
+                </>
+              )}
+            </button>
+          </div>
         ) : (
           <button
             onClick={() => setModalOpen(true)}
@@ -393,11 +406,10 @@ export default function Home() {
             overflow: "hidden",
           }}>
             {[
-              { label: "Historial",     href: "/historial", external: true },
-              { label: "El problema",   href: "#problema",  external: false },
-              { label: "Cómo funciona", href: "#como",      external: false },
-              { label: "Arquitectura",  href: "#arch",      external: false },
-            ].map(({ label, href, external }) => (
+              { label: "El problema",   href: "#problema" },
+              { label: "Cómo funciona", href: "#como" },
+              { label: "Arquitectura",  href: "#arch" },
+            ].map(({ label, href }) => (
               <a
                 key={href}
                 href={href}
@@ -414,18 +426,6 @@ export default function Home() {
                 {label}
               </a>
             ))}
-            <div style={{ padding: "16px 24px" }}>
-              <button
-                onClick={() => { setMobileMenuOpen(false); setModalOpen(true); }}
-                style={{
-                  width: "100%", background: C.white, border: "none", borderRadius: 4,
-                  color: "#000", fontFamily: "monospace", fontSize: 13,
-                  padding: "14px", cursor: "pointer",
-                }}
-              >
-                Iniciar entrevista
-              </button>
-            </div>
           </div>
         </>
       )}
@@ -668,7 +668,7 @@ export default function Home() {
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1a1a1a")}
               >
                 <p style={{ fontFamily: "monospace", fontSize: 13, color: C.white, margin: 0 }}>{title}</p>
-                <p style={{ fontFamily: "monospace", fontSize: 11, color: "#333", margin: 0, lineHeight: 1.7 }}>{desc}</p>
+                <p style={{ fontFamily: "monospace", fontSize: 11, color: C.mid, margin: 0, lineHeight: 1.7 }}>{desc}</p>
               </div>
             ))}
           </div>

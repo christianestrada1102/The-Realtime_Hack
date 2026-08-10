@@ -101,6 +101,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const startedRef = useRef(false);
   const [sessionStarted, setSessionStarted] = useState(false);
   const [alreadyEnded, setAlreadyEnded] = useState(false);
+  const [appMenuOpen, setAppMenuOpen] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const startListeningRef = useRef<() => void>(() => {});
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -423,18 +424,20 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           }}>
             {remaining !== null ? formatTime(remaining) : "--:--"}
           </span>
-          <button
-            onClick={() => setShowTranscript(true)}
-            style={{
-              fontFamily: "monospace", fontSize: 11, color: "#888",
-              background: "none", border: "none", cursor: "pointer",
-              transition: "color 200ms",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#888")}
-          >
-            {isMobile ? "≡" : "Ver transcripcion"}
-          </button>
+          {!isMobile && (
+            <button
+              onClick={() => setShowTranscript(true)}
+              style={{
+                fontFamily: "monospace", fontSize: 11, color: "#888",
+                background: "none", border: "none", cursor: "pointer",
+                transition: "color 200ms",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#888")}
+            >
+              Ver transcripcion
+            </button>
+          )}
           {!isMobile && (
             <a
               href="/historial"
@@ -462,8 +465,55 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               {isMobile ? "✕" : "Terminar"}
             </button>
           )}
+          {isMobile && (
+            <button
+              onClick={() => setAppMenuOpen((o) => !o)}
+              style={{ background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex", flexDirection: "column", gap: 4 }}
+            >
+              {appMenuOpen ? (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <line x1="1" y1="1" x2="15" y2="15" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                  <line x1="15" y1="1" x2="1" y2="15" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <>
+                  <span style={{ display: "block", height: 1.5, width: 16, backgroundColor: "#888", borderRadius: 1 }} />
+                  <span style={{ display: "block", height: 1.5, width: 16, backgroundColor: "#888", borderRadius: 1 }} />
+                  <span style={{ display: "block", height: 1.5, width: 16, backgroundColor: "#888", borderRadius: 1 }} />
+                </>
+              )}
+            </button>
+          )}
         </div>
       </header>
+
+      {/* ── App mobile menu ── */}
+      {isMobile && appMenuOpen && (
+        <>
+          <div onClick={() => setAppMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 18 }} />
+          <div style={{
+            position: "fixed", top: 48, right: 0, zIndex: 19,
+            backgroundColor: "#0f0f0f", borderLeft: "1px solid #1a1a1a", borderBottom: "1px solid #1a1a1a",
+            display: "flex", flexDirection: "column", minWidth: 180,
+            animation: "slideDown 200ms ease",
+          }}>
+            <a
+              href="#transcript"
+              onClick={(e) => { e.preventDefault(); setAppMenuOpen(false); setShowTranscript(true); }}
+              style={{ fontFamily: "monospace", fontSize: 13, color: "#aaa", textDecoration: "none", padding: "16px 20px", borderBottom: "1px solid #1a1a1a" }}
+            >
+              Ver transcripción
+            </a>
+            <a
+              href="/historial"
+              onClick={() => setAppMenuOpen(false)}
+              style={{ fontFamily: "monospace", fontSize: 13, color: "#aaa", textDecoration: "none", padding: "16px 20px" }}
+            >
+              Historial
+            </a>
+          </div>
+        </>
+      )}
 
       {/* ── Zona superior: Entrevistador ── */}
       <div style={{
@@ -763,6 +813,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         @keyframes ring-pulse {
           0%, 100% { transform: scale(1); opacity: 0.5; }
           50% { transform: scale(1.06); opacity: 0.2; }
+        }
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(4px); }
