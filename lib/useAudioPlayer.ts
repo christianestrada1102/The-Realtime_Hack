@@ -18,10 +18,18 @@ function unlockAudioContext() {
 
 export function useAudioPlayer() {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // Ref mirrors isSpeaking but updates synchronously — safe to read in callbacks
+  const isSpeakingRef = useRef(false);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const stoppedIntentionally = useRef(false);
+
+  const setSpeaking = (val: boolean) => {
+    isSpeakingRef.current = val;
+    setIsSpeaking(val);
+  };
 
   // Keep a stable base element — used to unlock HTMLAudioElement on iOS during a user gesture
   const baseElRef = useRef<HTMLAudioElement | null>(null);
@@ -43,10 +51,8 @@ export function useAudioPlayer() {
 
   const stop = useCallback(() => {
     stoppedIntentionally.current = true;
-    // Abort any in-flight fetch to /api/speak
     abortRef.current?.abort();
     abortRef.current = null;
-    // Pause and discard the current audio element
     const audio = audioRef.current;
     if (audio) {
       audio.pause();
@@ -55,23 +61,20 @@ export function useAudioPlayer() {
       try { audio.src = ""; } catch {}
       audioRef.current = null;
     }
-    // Revoke blob URL
     if (urlRef.current) {
       URL.revokeObjectURL(urlRef.current);
       urlRef.current = null;
     }
-    setIsSpeaking(false);
+    setSpeaking(false);
   }, []);
 
   const speak = useCallback(async (text: string, onEnded?: () => void) => {
-    // Reset intentional-stop flag and cancel previous
     stoppedIntentionally.current = false;
     stop();
-    stoppedIntentionally.current = false; // reset again after stop() sets it true
+    stoppedIntentionally.current = false;
 
-    // Mark as speaking immediately so callers can guard mic before audio starts
-    setIsSpeaking(true);
-    isSpeakingRef.current = true;
+    // Mark speaking immediately — ref updates sync so startListening guard sees it right away
+    setSpeaking(true);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -89,6 +92,7 @@ export function useAudioPlayer() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         console.error("[useAudioPlayer] speak failed:", data.error ?? res.status);
+        setSpeaking(false);
         onEnded?.();
         return;
       }
@@ -101,7 +105,8 @@ export function useAudioPlayer() {
 
       // iOS requires reusing the same element that was unlocked during the tap gesture.
       // Other browsers (Chrome, Firefox) allow fresh elements after any user gesture.
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       const audio = (isIOS && baseElRef.current) ? baseElRef.current : (() => {
         const el = document.createElement("audio");
         el.setAttribute("playsinline", "");
@@ -117,19 +122,18 @@ export function useAudioPlayer() {
 
       audio.onended = () => {
         if (urlRef.current === url) { URL.revokeObjectURL(url); urlRef.current = null; }
-        setIsSpeaking(false);
+        setSpeaking(false);   // ref updated sync — startListening guard sees false immediately
         onEnded?.();
       };
 
       audio.onerror = (e) => {
-        if (stoppedIntentionally.current) return; // silently ignore — we caused this
+        if (stoppedIntentionally.current) return;
         console.error("[useAudioPlayer] playback error", e);
         if (urlRef.current === url) { URL.revokeObjectURL(url); urlRef.current = null; }
-        setIsSpeaking(false);
+        setSpeaking(false);
         onEnded?.();
       };
 
-      setIsSpeaking(true);
       await audio.play().catch(async (err) => {
         if (stoppedIntentionally.current) return;
         if (err.name === "NotAllowedError") {
@@ -138,26 +142,22 @@ export function useAudioPlayer() {
           await audio.play().catch((e) => {
             if (stoppedIntentionally.current) return;
             console.error("[useAudioPlayer] play blocked after unlock:", e);
-            setIsSpeaking(false);
+            setSpeaking(false);
             onEnded?.();
           });
         } else {
           console.error("[useAudioPlayer] play error:", err);
-          setIsSpeaking(false);
+          setSpeaking(false);
           onEnded?.();
         }
       });
     } catch (err: any) {
       if (err?.name === "AbortError" || stoppedIntentionally.current) return;
-      setIsSpeaking(false);
+      setSpeaking(false);
       console.error("[useAudioPlayer] speak error:", err);
       onEnded?.();
     }
   }, [stop]);
-
-  // Stable ref so callbacks can read current speaking state without stale closure
-  const isSpeakingRef = useRef(false);
-  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
 
   return { speak, stop, isSpeaking, isSpeakingRef, unlockAudio };
 }
