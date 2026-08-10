@@ -278,6 +278,25 @@ export default function Home() {
   }, []);
 
   function handleStart() {
+    // Unlock iOS audio from this user gesture before navigating.
+    // This satisfies the browser's autoplay policy for the entire tab session,
+    // so SessionView doesn't need a second tap gate.
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      ctx.resume();
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+    } catch {}
+    try {
+      const el = document.createElement("audio");
+      el.setAttribute("playsinline", "");
+      el.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAA==";
+      el.play().catch(() => {});
+    } catch {}
+
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const params = new URLSearchParams({ duration: String(duration), level });
     if (role.trim()) params.set("role", role.trim());

@@ -71,10 +71,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     const lvl = params.get("level") ?? "mid";
     setLevel(["junior", "mid", "senior"].includes(lvl) ? (lvl as Level) : "mid");
     setRole(params.get("role") ?? "");
-    // Desktop doesn't need the tap-gate — unlock immediately.
-    // Use window.innerWidth directly to avoid the race where useBreakpoint
-    // initializes as "desktop" (SSR default), making isMobile=false on first render.
-    if (window.innerWidth >= 768) setAudioUnlocked(true);
   }, []);
 
   // Guard: if this session was already completed, don't let it restart
@@ -98,10 +94,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
   const { lang, t } = useLang();
-  // Start locked on all devices — useEffect below unlocks desktop immediately.
-  // This prevents the race where useBreakpoint starts as "desktop" (SSR default)
-  // so isMobile=false on first render → audioUnlocked=true on mobile, skipping the tap gate.
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
@@ -329,11 +321,15 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (startedRef.current) return;
     if (status !== "ready") return;
-    if (!audioUnlocked) return;
+    // Unlock audio now — user gesture already happened on the landing page.
+    // warmAudioContext creates the AudioContext while the browser still considers
+    // this a user-activated context (client-side navigation keeps activation alive).
+    unlockAudio();
+    warmAudioContext();
     startedRef.current = true;
     setSessionStarted(true);
     startInterview();
-  }, [status, audioUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!sessionStarted || phase === "ended") return;
@@ -416,25 +412,6 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   );
 
   if (showFeedback) return <FeedbackScreen history={historyRef.current} duration={totalSeconds} />;
-
-  // iOS requires audio to be triggered from a direct user gesture.
-  // Show a tap gate on mobile so we can unlock the audio engine before starting.
-  if (isMobile && !audioUnlocked) {
-    return (
-      <div
-        onClick={() => { unlockIOSAudio(); unlockAudio(); warmAudioContext(); setAudioUnlocked(true); }}
-        style={{
-          backgroundColor: "#0a0a0a", minHeight: "100vh", cursor: "pointer",
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", gap: 16,
-          userSelect: "none",
-        }}
-      >
-        <p style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: "#fff", margin: 0 }}>Poised</p>
-        <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555", margin: 0 }}>{t.tapToStart}</p>
-      </div>
-    );
-  }
 
   return (
     <div style={{ backgroundColor: "#0a0a0a", minHeight: "100vh" }} className="flex flex-col text-white overflow-hidden">
