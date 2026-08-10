@@ -8,11 +8,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Poised",
   description: "Simulador de entrevistas técnicas con presión real",
-  metadataBase: new URL("https://the-realtime-hack.vercel.app"),
+  metadataBase: new URL("https://poised.codebynas.dev"),
   openGraph: {
     title: "Poised",
     description: "Simulador de entrevistas técnicas con presión real",
-    url: "https://the-realtime-hack.vercel.app",
+    url: "https://poised.codebynas.dev",
     siteName: "Poised",
     images: [
       {
