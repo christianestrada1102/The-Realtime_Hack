@@ -204,16 +204,24 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       appendHistory({ role: "interviewer", content: reply });
       setLastInterviewerMsg(reply);
       setMsgKey((k) => k + 1);
-      setPhase("speaking");
       if (!sessionActiveRef.current) return;
       if (iData.endSession) {
-        speak(reply, () => {
-          if (!sessionActiveRef.current) return;
-          sessionActiveRef.current = false;
-          localStorage.setItem(`session-ended-${sessionId}`, "true");
-          playEndTone().then(() => { setPhase("ended"); setShowFeedback(true); });
-        });
+        sessionActiveRef.current = false;
+        localStorage.setItem(`session-ended-${sessionId}`, "true");
+        if (textMode) {
+          setPhase("ended");
+          await playEndTone();
+          setShowFeedback(true);
+        } else {
+          setPhase("speaking");
+          speak(reply, () => {
+            playEndTone().then(() => { setPhase("ended"); setShowFeedback(true); });
+          });
+        }
+      } else if (textMode) {
+        setPhase("idle");
       } else {
+        setPhase("speaking");
         speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
       }
     } catch (err: any) {
@@ -319,8 +327,12 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       setHistoryDisplay(historyRef.current);
       setLastInterviewerMsg(reply);
       setMsgKey(1);
-      setPhase("speaking");
-      speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
+      if (textMode) {
+        setPhase("idle");
+      } else {
+        setPhase("speaking");
+        speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
+      }
     } catch {
       setError("Error al iniciar entrevista"); setPhase("idle");
     }
@@ -329,7 +341,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (startedRef.current) return;
     if (status !== "ready") return;
-    if (!audioUnlocked) return;
+    if (!audioUnlocked && !textMode) return;
     startedRef.current = true;
     setSessionStarted(true);
     startInterview();
@@ -419,7 +431,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
 
   // iOS requires audio to be triggered from a direct user gesture.
   // Show a tap gate on mobile so we can unlock the audio engine before starting.
-  if (isMobile && !audioUnlocked) {
+  if (isMobile && !audioUnlocked && !textMode) {
     return (
       <div style={{
         backgroundColor: "#0a0a0a", minHeight: "100vh",
