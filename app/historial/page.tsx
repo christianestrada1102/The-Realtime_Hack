@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { FeedbackData } from "@/app/api/feedback/route";
 
 type SessionRow = {
@@ -36,6 +37,7 @@ const C = {
 };
 
 export default function HistorialPage() {
+  const router = useRouter();
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<SessionDetail | null>(null);
@@ -235,16 +237,28 @@ export default function HistorialPage() {
                   <p style={{ fontFamily: "monospace", fontSize: 11, color: "#888", lineHeight: 1.8 }}>{selected.feedback?.recommendation}</p>
                 </div>
 
-                <button
-                  onClick={() => setSelected(null)}
-                  style={{
-                    background: "none", border: `1px solid ${C.dim}`, borderRadius: 6,
-                    color: C.mid, fontFamily: "monospace", fontSize: 11,
-                    padding: "10px", cursor: "pointer", marginTop: 4,
-                  }}
-                >
-                  cerrar
-                </button>
+                <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                  <button
+                    onClick={() => { setSelected(null); router.push("/"); }}
+                    style={{
+                      flex: 1, background: "#fff", border: "none", borderRadius: 6,
+                      color: "#000", fontFamily: "monospace", fontSize: 13,
+                      padding: "12px", cursor: "pointer", fontWeight: 500,
+                    }}
+                  >
+                    Reintentar entrevista
+                  </button>
+                  <button
+                    onClick={() => setSelected(null)}
+                    style={{
+                      flex: 1, background: "none", border: `1px solid #333`, borderRadius: 6,
+                      color: "#555", fontFamily: "monospace", fontSize: 13,
+                      padding: "12px", cursor: "pointer",
+                    }}
+                  >
+                    Cerrar
+                  </button>
+                </div>
               </>
             )}
           </div>
