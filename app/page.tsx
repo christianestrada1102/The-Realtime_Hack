@@ -612,9 +612,9 @@ export default function Home() {
           padding: "80px 24px", display: "flex", flexDirection: "column",
           alignItems: "center", gap: 48, borderTop: `1px solid ${C.borderLo}`,
         }}>
-          <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0 }}>
+          <h2 style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(24px, 4vw, 32px)", color: C.white, margin: 0 }}>
             Cómo funciona
-          </p>
+          </h2>
           <div
             ref={howSectionRef}
             style={isMobile
