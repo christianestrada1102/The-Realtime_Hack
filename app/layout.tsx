@@ -8,6 +8,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Poised",
   description: "Simulador de entrevistas técnicas con presión real",
+  metadataBase: new URL("https://the-realtime-hack.vercel.app"),
   openGraph: {
     title: "Poised",
     description: "Simulador de entrevistas técnicas con presión real",
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     siteName: "Poised",
     images: [
       {
-        url: "/Assets/Images/poised.codebynas.dev_.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Poised — Simulador de entrevistas técnicas",
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Poised",
     description: "Simulador de entrevistas técnicas con presión real",
-    images: ["/Assets/Images/poised.codebynas.dev_.png"],
+    images: ["/og-image.png"],
   },
 };
 
