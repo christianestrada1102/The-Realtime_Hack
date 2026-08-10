@@ -60,7 +60,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const channelId = `session-${sessionId}`;
   const { send, status } = useChannel<ChatContent>({ channelId });
   const { startRecording, stopRecording, cancelRecording } = useVoiceRecorder();
-  const { speak, stop: stopAudio, unlockAudio } = useAudioPlayer();
+  const { speak, stop: stopAudio, isSpeakingRef, unlockAudio } = useAudioPlayer();
   const { startDetecting, stopDetecting } = useSilenceDetector();
 
   const [textMode, setTextMode] = useState(false);
@@ -137,6 +137,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         appendHistory({ role: "interviewer", content: msg });
         setLastInterviewerMsg(msg);
         setMsgKey((k) => k + 1);
+        stopDetecting(); cancelRecording();
         speak(msg, () => startListeningRef.current());
       }
 
@@ -256,6 +257,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           : "Entiendo que quizás no es el mejor momento. Voy a cerrar la sesión. Hasta luego.";
         sessionActiveRef.current = false;
         localStorage.setItem(`session-ended-${sessionId}`, "true");
+        stopDetecting(); cancelRecording();
         speak(noResponseMsg, () => {
           playEndTone().then(() => { setPhase("ended"); setShowFeedback(true); });
         });
@@ -279,6 +281,8 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   }
 
   async function startListening() {
+    // Hard guard — never start mic while Ana is speaking
+    if (isSpeakingRef.current) return;
     setPhase("listening");
     const stream = await startRecording();
     if (!stream) { setPhase("idle"); return; }

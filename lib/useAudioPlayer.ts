@@ -69,6 +69,10 @@ export function useAudioPlayer() {
     stop();
     stoppedIntentionally.current = false; // reset again after stop() sets it true
 
+    // Mark as speaking immediately so callers can guard mic before audio starts
+    setIsSpeaking(true);
+    isSpeakingRef.current = true;
+
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -151,5 +155,9 @@ export function useAudioPlayer() {
     }
   }, [stop]);
 
-  return { speak, stop, isSpeaking, unlockAudio };
+  // Stable ref so callbacks can read current speaking state without stale closure
+  const isSpeakingRef = useRef(false);
+  useEffect(() => { isSpeakingRef.current = isSpeaking; }, [isSpeaking]);
+
+  return { speak, stop, isSpeaking, isSpeakingRef, unlockAudio };
 }
