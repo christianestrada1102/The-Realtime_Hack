@@ -12,9 +12,27 @@ export function useSilenceDetector() {
   const silenceSinceRef = useRef<number | null>(null);
   const everSpokeRef = useRef(false);
 
+  // Call this during a direct user gesture (tap) to pre-warm the AudioContext.
+  // Chrome Android requires the AudioContext to be created/resumed from a user gesture;
+  // creating it later (in an async callback) leaves it suspended and the analyser reads zeros.
+  function warmAudioContext() {
+    try {
+      if (contextRef.current && contextRef.current.state !== "closed") {
+        contextRef.current.resume().catch(() => {});
+        return;
+      }
+      const ctx = new AudioContext();
+      ctx.resume().catch(() => {});
+      contextRef.current = ctx;
+    } catch {}
+  }
+
   function stop() {
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    if (contextRef.current) { contextRef.current.close(); contextRef.current = null; }
+    // Don't close the context — keep it warm for the next startDetecting call
+    if (contextRef.current) {
+      contextRef.current.suspend().catch(() => {});
+    }
   }
 
   function startDetecting(
@@ -24,10 +42,14 @@ export function useSilenceDetector() {
     onVolume?: (bars: number[]) => void,
     silenceThreshold = 15
   ) {
-    stop();
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
 
-    const ctx = new AudioContext();
-    contextRef.current = ctx;
+    // Reuse pre-warmed context if available, otherwise create fresh
+    let ctx = contextRef.current;
+    if (!ctx || ctx.state === "closed") {
+      ctx = new AudioContext();
+      contextRef.current = ctx;
+    }
     ctx.resume().catch(() => {});
 
     const source = ctx.createMediaStreamSource(stream);
@@ -35,7 +57,7 @@ export function useSilenceDetector() {
     analyser.fftSize = 256;
     source.connect(analyser);
 
-    const dataArray = new Uint8Array(analyser.frequencyBinCount); // 128 bins
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
     silenceSinceRef.current = null;
     everSpokeRef.current = false;
     const startTime = Date.now();
@@ -44,13 +66,11 @@ export function useSilenceDetector() {
       analyser.getByteFrequencyData(dataArray);
       const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
 
-      // Compute bar heights for waveform (5 bars from frequency data)
       if (onVolume) {
         const chunkSize = Math.floor(dataArray.length / NUM_BARS);
         const bars = Array.from({ length: NUM_BARS }, (_, i) => {
           const slice = dataArray.slice(i * chunkSize, (i + 1) * chunkSize);
           const mean = slice.reduce((a, b) => a + b, 0) / slice.length;
-          // Scale 0–255 → 4–40px
           return Math.max(4, Math.round((mean / 255) * 40));
         });
         onVolume(bars);
@@ -73,5 +93,13 @@ export function useSilenceDetector() {
     }, 100);
   }
 
-  return { startDetecting, stopDetecting: stop };
+  function stopDetecting() {
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    if (contextRef.current && contextRef.current.state !== "closed") {
+      contextRef.current.close().catch(() => {});
+      contextRef.current = null;
+    }
+  }
+
+  return { startDetecting, stopDetecting, warmAudioContext };
 }

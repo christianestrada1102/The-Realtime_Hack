@@ -61,7 +61,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const { send, status } = useChannel<ChatContent>({ channelId });
   const { startRecording, stopRecording, cancelRecording } = useVoiceRecorder();
   const { speak, stop: stopAudio, unlockAudio } = useAudioPlayer();
-  const { startDetecting, stopDetecting } = useSilenceDetector();
+  const { startDetecting, stopDetecting, warmAudioContext } = useSilenceDetector();
 
   const [textMode, setTextMode] = useState(false);
   const [textInput, setTextInput] = useState("");
@@ -450,6 +450,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           onClick={() => {
             unlockIOSAudio();
             unlockAudio();
+            warmAudioContext();
             setAudioUnlocked(true);
           }}
           style={{
