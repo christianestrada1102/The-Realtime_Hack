@@ -49,6 +49,7 @@ const CodeEditor = dynamic(() => import("./CodeEditor").then((m) => m.CodeEditor
 
 type ChatContent = { text: string; role?: "user" | "interviewer" | "observer" };
 type Phase = "idle" | "speaking" | "listening" | "processing" | "ended";
+type Level = "junior" | "mid" | "senior";
 type HistoryEntry = { role: "user" | "interviewer"; content: string };
 
 const CODE_KEYWORDS = /implementa|escribe|código|función|algorithm|implementarías|codifica|define la función|resuelve|query|SQL|componente/i;
@@ -70,6 +71,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     setTextMode(params.get("mode") === "text");
     const dur = parseInt(params.get("duration") ?? "45", 10);
     setTotalSeconds((isNaN(dur) ? 45 : dur) * 60);
+    const lvl = params.get("level") ?? "mid";
+    setLevel(["junior", "mid", "senior"].includes(lvl) ? (lvl as Level) : "mid");
+    setRole(params.get("role") ?? "");
   }, []);
 
   // Guard: if this session was already completed, don't let it restart
@@ -79,6 +83,8 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     }
   }, [sessionId]);
 
+  const [level, setLevel] = useState<Level>("mid");
+  const [role, setRole] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [lastInterviewerMsg, setLastInterviewerMsg] = useState("");
@@ -100,6 +106,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
 
   const historyRef = useRef<HistoryEntry[]>([]);
   const [historyDisplay, setHistoryDisplay] = useState<HistoryEntry[]>([]);
+  const silenceCountRef = useRef(0);
   const router = useRouter();
   const startedRef = useRef(false);
   const [sessionStarted, setSessionStarted] = useState(false);
@@ -174,8 +181,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         body: JSON.stringify({
           message,
           history: historyRef.current.slice(0, -1),
-          config: { type: "tecnica", level: "mid", language: lang },
+          config: { type: "tecnica", level, language: lang },
           lang,
+          role: role || undefined,
         }),
         signal: controller.signal,
       });
@@ -198,7 +206,16 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       setMsgKey((k) => k + 1);
       setPhase("speaking");
       if (!sessionActiveRef.current) return;
-      speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
+      if (iData.endSession) {
+        speak(reply, () => {
+          if (!sessionActiveRef.current) return;
+          sessionActiveRef.current = false;
+          localStorage.setItem(`session-ended-${sessionId}`, "true");
+          playEndTone().then(() => { setPhase("ended"); setShowFeedback(true); });
+        });
+      } else {
+        speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
+      }
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       setError("Error al contactar al entrevistador");
@@ -210,6 +227,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     setWaveformBars([4, 4, 4, 4, 4]);
     const form = new FormData();
     form.append("audio", blob, "audio.webm");
+    form.append("lang", lang);
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
     const data = await res.json();
     if (!res.ok || data.error) {
@@ -217,16 +235,39 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       setPhase("idle");
       return;
     }
-    let text: string = data.text?.trim() ?? "";
-    if (!text) { startListeningRef.current(); return; }
+    const text: string = data.text?.trim() ?? "";
 
-    if (showEditor && codeValue.trim() && codeValue.trim() !== "// Escribe tu solución aquí") {
-      text = `[CÓDIGO ENVIADO]\n\`\`\`js\n${codeValue.trim()}\n\`\`\`\n${text}`;
+    // Comportamiento 2 — silencio repetido
+    if (text.length < 10) {
+      silenceCountRef.current += 1;
+      if (silenceCountRef.current >= 3) {
+        silenceCountRef.current = 0;
+        if (!sessionActiveRef.current) return;
+        const noResponseMsg = lang === "en"
+          ? "I understand this might not be the best time. I'll close the session. Goodbye."
+          : "Entiendo que quizás no es el mejor momento. Voy a cerrar la sesión. Hasta luego.";
+        sessionActiveRef.current = false;
+        localStorage.setItem(`session-ended-${sessionId}`, "true");
+        speak(noResponseMsg, () => {
+          playEndTone().then(() => { setPhase("ended"); setShowFeedback(true); });
+        });
+        return;
+      }
+      startListeningRef.current();
+      return;
     }
 
-    await send({ content: { text: data.text?.trim(), role: "user" } });
-    appendHistory({ role: "user", content: data.text?.trim() });
-    await callInterviewer(text);
+    // Respuesta válida — reset contador
+    silenceCountRef.current = 0;
+
+    let finalText = text;
+    if (showEditor && codeValue.trim() && codeValue.trim() !== "// Escribe tu solución aquí") {
+      finalText = `[CÓDIGO ENVIADO]\n\`\`\`js\n${codeValue.trim()}\n\`\`\`\n${text}`;
+    }
+
+    await send({ content: { text, role: "user" } });
+    appendHistory({ role: "user", content: text });
+    await callInterviewer(finalText);
   }
 
   async function startListening() {
@@ -267,7 +308,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       const res = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "START_INTERVIEW", history: [], config: { type: "tecnica", level: "mid", language: lang }, lang }),
+        body: JSON.stringify({ message: "START_INTERVIEW", history: [], config: { type: "tecnica", level, language: lang }, lang, role: role || undefined }),
       });
       const data = await res.json();
       if (!res.ok || data.error) { setError(data.error ?? "Error al iniciar"); setPhase("idle"); return; }
@@ -423,7 +464,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         </a>
         {!isMobile && (
           <span style={{ fontFamily: "monospace", fontSize: 11, color: "#888" }}>
-            {t.technicalInterview}
+            {role || (lang === "en" ? "Technical interview" : "Entrevista técnica")} · {level.charAt(0).toUpperCase() + level.slice(1)}
           </span>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 12 : 20 }}>
@@ -562,15 +603,24 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           </p>
         </div>
 
-        <div style={{ maxWidth: 480, textAlign: "center", minHeight: 44, padding: "0 24px" }}>
+        <div style={{
+          maxWidth: isMobile ? "100%" : 480,
+          width: isMobile ? "100%" : undefined,
+          textAlign: "center", minHeight: 44,
+          padding: isMobile ? "0 20px" : "0 24px",
+          ...(isMobile ? { maxHeight: "calc(4 * 1.6 * 12px + 4px)", overflowY: "auto" } : {}),
+        }}>
           {lastInterviewerMsg && (
             <p
               key={msgKey}
               style={{
-                fontFamily: "monospace", fontSize: 13, color: "#888",
+                fontFamily: "monospace",
+                fontSize: isMobile ? 12 : 13,
+                color: "#888",
                 lineHeight: 1.6, margin: 0,
-                display: "-webkit-box", WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical", overflow: "hidden",
+                ...(isMobile
+                  ? { display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }
+                  : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }),
                 animation: "fade-in 0.4s ease",
               }}
             >
