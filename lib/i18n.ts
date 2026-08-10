@@ -184,4 +184,4 @@ export const translations = {
 } as const;
 
 export type Lang = "es" | "en";
-export type T = typeof translations["es"];
+export type T = typeof translations[Lang];
