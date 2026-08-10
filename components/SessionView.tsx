@@ -9,6 +9,7 @@ import { useVoiceRecorder } from "@/lib/useVoiceRecorder";
 import { useAudioPlayer } from "@/lib/useAudioPlayer";
 import { useSilenceDetector } from "@/lib/useSilenceDetector";
 import { useBreakpoint } from "@/lib/useIsMobile";
+import { useLang } from "@/lib/LangContext";
 
 // Unlocks iOS audio engine — must be called from a direct user gesture (tap)
 function unlockIOSAudio() {
@@ -89,11 +90,13 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
+  const { lang, t } = useLang();
   const [audioUnlocked, setAudioUnlocked] = useState(!isMobile);
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
   const interviewAbortRef = useRef<AbortController | null>(null);
+  const sessionActiveRef = useRef(true);
 
   const historyRef = useRef<HistoryEntry[]>([]);
   const [historyDisplay, setHistoryDisplay] = useState<HistoryEntry[]>([]);
@@ -133,6 +136,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       if (left === 0 && !timeUpRef.current) {
         timeUpRef.current = true;
         clearInterval(t);
+        sessionActiveRef.current = false;
         interviewAbortRef.current?.abort();
         stopAudio();
         stopDetecting();
@@ -170,7 +174,8 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         body: JSON.stringify({
           message,
           history: historyRef.current.slice(0, -1),
-          config: { type: "tecnica", level: "mid", language: "es" },
+          config: { type: "tecnica", level: "mid", language: lang },
+          lang,
         }),
         signal: controller.signal,
       });
@@ -186,12 +191,14 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         setShowEditor(true);
         if (iData.starterCode) setCodeValue(iData.starterCode);
       }
+      if (!sessionActiveRef.current) return;
       await send({ content: { text: reply, role: "interviewer" } });
       appendHistory({ role: "interviewer", content: reply });
       setLastInterviewerMsg(reply);
       setMsgKey((k) => k + 1);
       setPhase("speaking");
-      speak(reply, () => startListeningRef.current());
+      if (!sessionActiveRef.current) return;
+      speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
     } catch (err: any) {
       if (err?.name === "AbortError") return;
       setError("Error al contactar al entrevistador");
@@ -260,10 +267,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       const res = await fetch("/api/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: "START_INTERVIEW", history: [], config: { type: "tecnica", level: "mid", language: "es" } }),
+        body: JSON.stringify({ message: "START_INTERVIEW", history: [], config: { type: "tecnica", level: "mid", language: lang }, lang }),
       });
       const data = await res.json();
       if (!res.ok || data.error) { setError(data.error ?? "Error al iniciar"); setPhase("idle"); return; }
+      if (!sessionActiveRef.current) return;
       const reply: string = data.response;
       await send({ content: { text: reply, role: "interviewer" } });
       historyRef.current = [{ role: "interviewer", content: reply }];
@@ -271,7 +279,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       setLastInterviewerMsg(reply);
       setMsgKey(1);
       setPhase("speaking");
-      speak(reply, () => startListeningRef.current());
+      speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
     } catch {
       setError("Error al iniciar entrevista"); setPhase("idle");
     }
@@ -308,6 +316,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   }, [sessionStarted, phase]);
 
   function confirmLeave() {
+    sessionActiveRef.current = false;
     stopAudio();
     stopDetecting();
     cancelRecording();
@@ -318,6 +327,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   }
   function cancelLeave() { setPendingNavigation(null); }
   function handleEnd() {
+    sessionActiveRef.current = false;
     interviewAbortRef.current?.abort();
     stopAudio();
     stopDetecting();
@@ -338,7 +348,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24,
     }}>
       <p style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: "#fff", margin: 0 }}>Poised</p>
-      <p style={{ fontFamily: "monospace", fontSize: 13, color: "#555", margin: 0 }}>Esta sesión ya terminó.</p>
+      <p style={{ fontFamily: "monospace", fontSize: 13, color: "#555", margin: 0 }}>{t.sessionEnded}</p>
       <div style={{ display: "flex", gap: 16 }}>
         <button
           onClick={() => router.push("/historial")}
@@ -348,7 +358,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             padding: "10px 20px", cursor: "pointer",
           }}
         >
-          Ver historial
+          {t.viewHistory}
         </button>
         <button
           onClick={() => router.push("/")}
@@ -358,7 +368,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             padding: "10px 20px", cursor: "pointer",
           }}
         >
-          Nueva entrevista
+          {t.newInterview}
         </button>
       </div>
     </div>
@@ -377,7 +387,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       }}>
         <p style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: "#fff" }}>Poised</p>
         <p style={{ fontFamily: "monospace", fontSize: 12, color: "#666", textAlign: "center", maxWidth: 260, lineHeight: 1.8 }}>
-          Toca para comenzar la entrevista
+          {t.tapToStart}
         </p>
         <button
           onClick={() => {
@@ -390,7 +400,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             padding: "14px 36px", cursor: "pointer",
           }}
         >
-          Comenzar
+          {t.begin}
         </button>
       </div>
     );
@@ -413,7 +423,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         </a>
         {!isMobile && (
           <span style={{ fontFamily: "monospace", fontSize: 11, color: "#888" }}>
-            Entrevista técnica · Mid
+            {t.technicalInterview}
           </span>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 12 : 20 }}>
@@ -435,7 +445,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#888")}
             >
-              Ver transcripcion
+              {t.viewTranscript}
             </button>
           )}
           {!isMobile && (
@@ -448,7 +458,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
             >
-              Historial
+              {t.historial}
             </a>
           )}
           {phase !== "ended" && (
@@ -462,7 +472,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#666")}
             >
-              {isMobile ? "✕" : "Terminar"}
+              {isMobile ? "✕" : t.end}
             </button>
           )}
           {isMobile && (
@@ -502,14 +512,14 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               onClick={(e) => { e.preventDefault(); setAppMenuOpen(false); setShowTranscript(true); }}
               style={{ fontFamily: "monospace", fontSize: 13, color: "#aaa", textDecoration: "none", padding: "16px 20px", borderBottom: "1px solid #1a1a1a" }}
             >
-              Ver transcripción
+              {t.viewTranscript}
             </a>
             <a
               href="/historial"
               onClick={() => setAppMenuOpen(false)}
               style={{ fontFamily: "monospace", fontSize: 13, color: "#aaa", textDecoration: "none", padding: "16px 20px" }}
             >
-              Historial
+              {t.historial}
             </a>
           </div>
         </>
@@ -592,7 +602,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleTextSubmit(); }}
-              placeholder="Escribe tu respuesta..."
+              placeholder={t.writeAnswer}
               disabled={phase === "processing" || phase === "speaking" || phase === "ended"}
               style={{
                 flex: 1, backgroundColor: "#111", border: "1px solid #333",
@@ -611,7 +621,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
               onMouseEnter={(e) => (e.currentTarget.style.color = "#aaa")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
             >
-              Enviar
+              {t.send}
             </button>
           </div>
         ) : showEditor ? (
@@ -639,7 +649,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
               >
-                cerrar
+                {t.hideEditor}
               </button>
             </div>
             <div style={{ height: 160 }}>
@@ -659,10 +669,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                 flexShrink: 0,
               }} />
               <span style={{ fontFamily: "monospace", fontSize: 12, color: "#666" }}>
-                {isListening ? "Grabando..."
-                  : phase === "processing" || isSpeaking ? "Ana esta respondiendo..."
-                  : phase === "ended" ? "Entrevista finalizada"
-                  : "Tu turno"}
+                {isListening ? t.recording
+                  : phase === "processing" || isSpeaking ? t.responding
+                  : phase === "ended" ? ""
+                  : t.yourTurn}
               </span>
             </div>
 
@@ -693,7 +703,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "#fff"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "#888"; e.currentTarget.style.borderColor = "#444"; }}
           >
-            Editor de código
+            {t.codeEditor}
           </button>
         )}
       </div>
@@ -727,7 +737,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           padding: "0 20px", height: 48,
           borderBottom: "1px solid #1a1a1a", flexShrink: 0,
         }}>
-          <span style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>Transcripción</span>
+          <span style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>{t.transcript}</span>
           <button
             onClick={() => setShowTranscript(false)}
             style={{
@@ -776,10 +786,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             borderRadius: 8, padding: 32, maxWidth: 400, width: "calc(100% - 48px)",
           }}>
             <p style={{ fontFamily: "Manuscribe, serif", fontSize: 20, color: "#fff", margin: 0 }}>
-              ¿Abandonar la entrevista?
+              {t.abandonTitle}
             </p>
             <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555", marginTop: 8, lineHeight: 1.6 }}>
-              Si sales ahora, la sesión se terminará y no podrás retomar.
+              {t.abandonBody}
             </p>
             <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
               <button
@@ -789,7 +799,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                   borderRadius: 6, fontSize: 13, padding: "10px 20px", cursor: "pointer",
                 }}
               >
-                Continuar entrevista
+                {t.continueInterview}
               </button>
               <button
                 onClick={confirmLeave}
@@ -802,7 +812,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#aaa")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
               >
-                Salir
+                {t.leave}
               </button>
             </div>
           </div>

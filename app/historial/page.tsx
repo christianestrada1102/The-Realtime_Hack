@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FeedbackData } from "@/app/api/feedback/route";
+import { useLang } from "@/lib/LangContext";
 
 type SessionRow = {
   id: string;
@@ -39,6 +40,7 @@ const C = {
 
 export default function HistorialPage() {
   const router = useRouter();
+  const { t } = useLang();
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<SessionDetail | null>(null);
@@ -79,12 +81,13 @@ export default function HistorialPage() {
     withScore.length < 2
       ? "→ estable"
       : newestScore! > oldestScore!
-      ? "↑ mejorando"
+      ? t.improving
       : newestScore! < oldestScore!
-      ? "↓ bajando"
-      : "→ estable";
-  const trendColor =
-    trend.startsWith("↑") ? C.white : trend.startsWith("↓") ? "#ef4444" : "#555";
+      ? t.declining
+      : t.stable;
+  const isImproving = withScore.length >= 2 && newestScore! > oldestScore!;
+  const isDeclining = withScore.length >= 2 && newestScore! < oldestScore!;
+  const trendColor = isImproving ? C.white : isDeclining ? "#ef4444" : "#555";
 
   const StatBlock = ({ value, label }: { value: string; label: string }) => (
     <div style={{ flex: 1, textAlign: "center", padding: "0 8px" }}>
@@ -105,10 +108,10 @@ export default function HistorialPage() {
         </a>
 
         <h1 style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: C.white, margin: "0 0 8px" }}>
-          Tus entrevistas
+          {t.yourInterviews}
         </h1>
         <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", margin: "0 0 48px", letterSpacing: "0.06em" }}>
-          historial de sesiones
+          {t.sessionHistory}
         </p>
 
         {/* Stats */}
@@ -118,29 +121,29 @@ export default function HistorialPage() {
             borderTop: `1px solid #1a1a1a`, borderBottom: `1px solid #1a1a1a`,
             margin: "0 0 48px", padding: "24px 0",
           }}>
-            <StatBlock value={String(totalCount)} label="entrevistas" />
+            <StatBlock value={String(totalCount)} label={t.total} />
             <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
-            <StatBlock value={bestScore != null ? bestScore.toFixed(1) : "—"} label="mejor score" />
+            <StatBlock value={bestScore != null ? bestScore.toFixed(1) : "—"} label={t.bestScore} />
             <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
-            <StatBlock value={avgScore != null ? avgScore.toFixed(1) : "—"} label="promedio" />
+            <StatBlock value={avgScore != null ? avgScore.toFixed(1) : "—"} label={t.average} />
             <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
             <div style={{ flex: 1, textAlign: "center", padding: "0 8px" }}>
               <p style={{ fontFamily: "monospace", fontSize: 18, color: trendColor, margin: "0 0 6px", lineHeight: 1.6 }}>
                 {trend}
               </p>
-              <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>tendencia</p>
+              <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>{t.trend}</p>
             </div>
           </div>
         )}
 
         {/* List */}
         {loading && (
-          <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555" }}>Cargando...</p>
+          <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555" }}>{t.loading}</p>
         )}
 
         {!loading && sessions.length === 0 && (
           <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555" }}>
-            No hay entrevistas guardadas aún.
+            {t.noSessions}
           </p>
         )}
 
@@ -190,7 +193,7 @@ export default function HistorialPage() {
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#555"; e.currentTarget.style.color = C.white; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.dim; e.currentTarget.style.color = C.mid; }}
               >
-                Ver detalle
+                {t.viewDetail}
               </button>
             </div>
           ))}
@@ -222,7 +225,7 @@ export default function HistorialPage() {
             }}
           >
             {loadingDetail && !selected && (
-              <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555", textAlign: "center" }}>Cargando...</p>
+              <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555", textAlign: "center" }}>{t.loading}</p>
             )}
 
             {selected && (
@@ -243,7 +246,7 @@ export default function HistorialPage() {
                 {/* Topics */}
                 {selected.feedback?.topics?.length > 0 && (
                   <div>
-                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 10 }}>temas evaluados</p>
+                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 10 }}>{t.topicsEval}</p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {selected.feedback.topics.map((t, i) => (
                         <span key={i} style={{
@@ -261,7 +264,7 @@ export default function HistorialPage() {
                 {selected.feedback?.codeReview && (
                   <div style={{ borderTop: `1px solid #1a1a1a`, paddingTop: 20 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                      <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>ejercicio de código</p>
+                      <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>{t.codeExercise}</p>
                       <span style={{
                         fontFamily: "monospace", fontSize: 9, padding: "2px 7px", borderRadius: 4,
                         border: `1px solid ${selected.feedback.codeReview.verdict === "correcto" ? C.white : selected.feedback.codeReview.verdict === "parcial" ? "#888" : "#ef4444"}`,
@@ -277,7 +280,7 @@ export default function HistorialPage() {
                 {/* Strengths / Weaknesses */}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, borderTop: `1px solid #1a1a1a`, paddingTop: 20 }}>
                   <div>
-                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 10 }}>lo que dominaste</p>
+                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 10 }}>{t.whatNailed}</p>
                     <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                       {selected.feedback?.strengths?.map((s, i) => (
                         <li key={i} style={{ fontFamily: "monospace", fontSize: 11, color: "#e4e4e7", lineHeight: 1.6 }}>— {s}</li>
@@ -285,7 +288,7 @@ export default function HistorialPage() {
                     </ul>
                   </div>
                   <div>
-                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 10 }}>donde mejorar</p>
+                    <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 10 }}>{t.whereImprove}</p>
                     <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                       {selected.feedback?.weaknesses?.map((w, i) => (
                         <li key={i} style={{ fontFamily: "monospace", fontSize: 11, color: "#71717a", lineHeight: 1.6 }}>— {w}</li>
@@ -296,7 +299,7 @@ export default function HistorialPage() {
 
                 {/* Recommendation */}
                 <div style={{ borderTop: `1px solid #1a1a1a`, paddingTop: 20 }}>
-                  <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 10 }}>proximos pasos</p>
+                  <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", marginBottom: 10 }}>{t.nextSteps}</p>
                   <p style={{ fontFamily: "monospace", fontSize: 11, color: "#888", lineHeight: 1.8 }}>{selected.feedback?.recommendation}</p>
                 </div>
 
@@ -309,7 +312,7 @@ export default function HistorialPage() {
                       padding: "12px", cursor: "pointer", fontWeight: 500,
                     }}
                   >
-                    Reintentar entrevista
+                    {t.retry}
                   </button>
                   <button
                     onClick={() => setSelected(null)}
@@ -319,7 +322,7 @@ export default function HistorialPage() {
                       padding: "12px", cursor: "pointer",
                     }}
                   >
-                    Cerrar
+                    {t.close}
                   </button>
                 </div>
               </>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PortalClientProvider } from "@/components/PortalClientProvider";
 import { LenisProvider } from "@/components/LenisProvider";
+import { LangProvider } from "@/lib/LangContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,9 +17,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preload" href="/ne_110m_land.json" as="fetch" crossOrigin="anonymous" />
       </head>
       <body className="bg-zinc-950 text-zinc-100 antialiased">
-        <LenisProvider>
-          <PortalClientProvider>{children}</PortalClientProvider>
-        </LenisProvider>
+        <LangProvider>
+          <LenisProvider>
+            <PortalClientProvider>{children}</PortalClientProvider>
+          </LenisProvider>
+        </LangProvider>
       </body>
     </html>
   );

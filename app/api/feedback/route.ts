@@ -1,5 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const SYSTEM_PROMPT_EN = `Analyze this technical interview and generate structured feedback in JSON.
+Respond ONLY with valid JSON, no additional text, no markdown.
+
+If [CODE SUBMITTED] followed by code appears in the transcript, evaluate that code specifically.
+
+{
+  "score": number from 1 to 10,
+  "summary": "One sentence summarizing overall performance",
+  "strengths": ["strength 1", "strength 2", "strength 3"],
+  "weaknesses": ["area for improvement 1", "area for improvement 2"],
+  "topics": [
+    { "name": "topic name", "level": "strong" | "weak" | "medium" }
+  ],
+  "codeReview": null | {
+    "problem": "brief description of the problem that was asked",
+    "verdict": "correct" | "partial" | "incorrect",
+    "what_worked": "what worked well in the code",
+    "what_to_improve": "what to improve: edge cases, complexity, readability, etc.",
+    "complexity": "O(n) — briefly explain why"
+  },
+  "recommendation": "A concrete paragraph on what to study and how to improve for the next interview"
+}
+
+If there was no coding exercise, set codeReview: null.`;
+
 const SYSTEM_PROMPT = `Analiza esta entrevista técnica y genera un feedback estructurado en JSON.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional, sin markdown.
 
@@ -47,16 +72,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 500 });
   }
 
-  const { history } = await req.json() as {
+  const { history, lang } = await req.json() as {
     history: Array<{ role: "user" | "interviewer"; content: string }>;
+    lang?: "es" | "en";
   };
+  const systemPrompt = lang === "en" ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT;
+  const transcriptLabel = lang === "en" ? "Interview transcript" : "Transcripción de la entrevista";
+  const interviewerLabel = lang === "en" ? "Interviewer" : "Entrevistador";
+  const candidateLabel = lang === "en" ? "Candidate" : "Candidato";
 
   if (!history?.length) {
-    return NextResponse.json({ error: "No history provided" }, { status: 400 });
+    return NextResponse.json({
+      score: 0,
+      summary: "La sesión terminó sin conversación registrada.",
+      strengths: [],
+      weaknesses: ["No hubo interacción durante la sesión"],
+      topics: [],
+      codeReview: null,
+      recommendation: "Intenta iniciar la sesión y responde las preguntas de la entrevistadora antes de terminar.",
+    } satisfies FeedbackData);
   }
 
   const transcript = history
-    .map((m) => `${m.role === "interviewer" ? "Entrevistador" : "Candidato"}: ${m.content}`)
+    .map((m) => `${m.role === "interviewer" ? interviewerLabel : candidateLabel}: ${m.content}`)
     .join("\n");
 
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -68,8 +106,8 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       model: "anthropic/claude-sonnet-4-5",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `Transcripción de la entrevista:\n\n${transcript}` },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `${transcriptLabel}:\n\n${transcript}` },
       ],
       max_tokens: 1200,
       temperature: 0.3,

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, memo } from "react";
 import { useRouter } from "next/navigation";
 import { useBreakpoint } from "@/lib/useIsMobile";
+import { useLang } from "@/lib/LangContext";
 import MobileWaves from "@/components/MobileWaves";
 import dynamic from "next/dynamic";
 
@@ -52,11 +53,6 @@ const DURATIONS = [
   { label: "60 min", value: 60 },
 ];
 
-const HOW_IT_WORKS = [
-  { step: "01", title: "Arranca la llamada",    desc: "Ana te saluda. Empieza con preguntas de presentación y escala a técnicas sin aviso." },
-  { step: "02", title: "El Observador entra",   desc: "Silencioso. Analiza tus respuestas en tiempo real. Si dudas demasiado, interrumpe." },
-  { step: "03", title: "Se acaba el tiempo",    desc: "30, 45 o 60 minutos. Cuando el reloj llega a cero, la entrevista termina. Sin prórroga." },
-];
 
 // Paleta centralizada — un solo lugar para ajustar legibilidad
 const C = {
@@ -69,6 +65,19 @@ const C = {
   border:   "#2a2a2a",
   borderLo: "#1e1e1e",
 };
+
+function LangToggle({ lang, toggle }: { lang: string; toggle: () => void }) {
+  return (
+    <button
+      onClick={toggle}
+      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", gap: 4, alignItems: "center" }}
+    >
+      <span style={{ fontFamily: "monospace", fontSize: 10, color: lang === "es" ? "#fff" : "#555", transition: "color 200ms" }}>ES</span>
+      <span style={{ fontFamily: "monospace", fontSize: 10, color: "#333" }}>|</span>
+      <span style={{ fontFamily: "monospace", fontSize: 10, color: lang === "en" ? "#fff" : "#555", transition: "color 200ms" }}>EN</span>
+    </button>
+  );
+}
 
 function useInView(ref: React.RefObject<Element | null>, rootMargin = "200px") {
   const [inView, setInView] = useState(false);
@@ -86,6 +95,7 @@ function useInView(ref: React.RefObject<Element | null>, rootMargin = "200px") {
 
 export default function Home() {
   const router = useRouter();
+  const { lang, t, toggle } = useLang();
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
   const isTablet = bp === "tablet";
@@ -309,9 +319,9 @@ export default function Home() {
         {!isMobile && (
           <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
             {[
-              { label: "El problema",   href: "#problema", id: "problema" },
-              { label: "Cómo funciona", href: "#como",     id: "como" },
-              { label: "Arquitectura",  href: "#arch",     id: "arch" },
+              { label: t.navProblem, href: "#problema", id: "problema" },
+              { label: t.navHow,     href: "#como",     id: "como" },
+              { label: t.navArch,    href: "#arch",     id: "arch" },
             ].map(({ label, href, id }) => {
               const isActive = activeSection === id;
               return (
@@ -343,6 +353,7 @@ export default function Home() {
         {/* Desktop CTA / Mobile: CTA + hamburger */}
         {isMobile ? (
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <LangToggle lang={lang} toggle={toggle} />
             <button
               onClick={() => setModalOpen(true)}
               style={{
@@ -354,7 +365,7 @@ export default function Home() {
               onMouseEnter={(e) => { e.currentTarget.style.background = C.white; e.currentTarget.style.color = "#000"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "none"; e.currentTarget.style.color = C.white; }}
             >
-              Iniciar
+              {t.startButton.split(" ")[0]}
             </button>
             <button
               onClick={() => setMobileMenuOpen((o) => !o)}
@@ -380,25 +391,28 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => setModalOpen(true)}
-            style={{
-              background: "none", border: "1px solid #333", borderRadius: 4,
-              color: C.white, fontFamily: "monospace", fontSize: 11,
-              padding: "8px 20px", cursor: "pointer",
-              transition: "background 300ms ease, color 300ms ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = C.white;
-              e.currentTarget.style.color = "#000";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "none";
-              e.currentTarget.style.color = C.white;
-            }}
-          >
-            Iniciar entrevista
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <LangToggle lang={lang} toggle={toggle} />
+            <button
+              onClick={() => setModalOpen(true)}
+              style={{
+                background: "none", border: "1px solid #333", borderRadius: 4,
+                color: C.white, fontFamily: "monospace", fontSize: 11,
+                padding: "8px 20px", cursor: "pointer",
+                transition: "background 300ms ease, color 300ms ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = C.white;
+                e.currentTarget.style.color = "#000";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "none";
+                e.currentTarget.style.color = C.white;
+              }}
+            >
+              {t.startButton}
+            </button>
+          </div>
         )}
       </nav>
 
@@ -419,9 +433,9 @@ export default function Home() {
             overflow: "hidden",
           }}>
             {[
-              { label: "El problema",   href: "#problema" },
-              { label: "Cómo funciona", href: "#como" },
-              { label: "Arquitectura",  href: "#arch" },
+              { label: t.navProblem, href: "#problema" },
+              { label: t.navHow,     href: "#como" },
+              { label: t.navArch,    href: "#arch" },
             ].map(({ label, href }) => (
               <a
                 key={href}
@@ -470,11 +484,11 @@ export default function Home() {
             </h1>
 
             <p ref={heroSubRef} style={{ fontFamily: "monospace", fontSize: 13, color: C.mid, margin: 0, opacity: 0 }}>
-              Practica entrevistas tecnicas con presion real.
+              {t.tagline}
             </p>
 
             <p ref={heroVersionRef} style={{ fontFamily: "monospace", fontSize: 11, color: C.dim, margin: 0, opacity: 0 }}>
-              v1.0 · The Realtime Hackathon 2026
+              {t.version}
             </p>
 
             <button
@@ -502,7 +516,7 @@ export default function Home() {
                 e.currentTarget.style.borderColor = "#333";
               }}
             >
-              Iniciar entrevista
+              {t.startButton}
             </button>
           </div>
 
@@ -510,7 +524,7 @@ export default function Home() {
             position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)",
             display: "flex", flexDirection: "column", alignItems: "center", gap: 8, opacity: 0,
           }}>
-            <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim }}>scroll</span>
+            <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim }}>{t.scroll}</span>
             <div style={{ width: 1, height: 40, backgroundColor: C.dim, animation: "scroll-line 1.6s ease-in-out infinite" }} />
           </div>
         </section>
@@ -523,13 +537,13 @@ export default function Home() {
         }}>
           <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 8 }}>
             <p ref={problemLine1Ref} style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(28px, 6vw, 52px)", color: C.white, margin: 0, opacity: 0 }}>
-              Leetcode no te prepara
+              {t.problemLine1}
             </p>
             <p ref={problemLine2Ref} style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(28px, 6vw, 52px)", color: C.low, margin: 0, opacity: 0 }}>
-              para los nervios.
+              {t.problemLine2}
             </p>
             <p ref={problemLine3Ref} style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(28px, 6vw, 52px)", color: C.white, margin: 0, opacity: 0, marginTop: 16 }}>
-              Poised si.
+              {t.poisedSi}
             </p>
           </div>
 
@@ -538,7 +552,7 @@ export default function Home() {
             gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",  // tablet & desktop: 3 cols
             gap: 0, maxWidth: 560, width: "100%",
           }}>
-            {["Interrupciones reales", "Presion de tiempo", "Feedback inmediato"].map((label, i, arr) => (
+            {[t.colFeature1, t.colFeature2, t.colFeature3].map((label, i, arr) => (
               <div key={label} style={{
                 borderTop: `1px solid ${C.border}`,
                 borderBottom: isMobile && i < arr.length - 1 ? `1px solid ${C.border}` : "none",
@@ -561,14 +575,10 @@ export default function Home() {
           borderTop: `1px solid ${C.borderLo}`,
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 32, width: isMobile ? "100%" : undefined, maxWidth: 280, textAlign: isMobile ? "center" : "left" }}>
-            <span style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(22px, 3vw, 28px)", color: C.white }}>El problema real</span>
+            <span style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(22px, 3vw, 28px)", color: C.white }}>{t.problemReal}</span>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {[
-                { num: "45%",  label: "de devs admite que los nervios afectan su desempeño" },
-                { num: "75%",  label: "de hiring managers dice que los nervios son el error más común" },
-                { num: "50%+", label: "peor desempeño cuando hay un observador presente" },
-              ].map(({ num, label }) => (
+              {t.stats.map(({ num, label }) => (
                 <div key={num} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontFamily: "Manuscribe, serif", fontSize: isMobile ? 32 : 40, color: C.white, lineHeight: 1 }}>{num}</span>
                   <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, lineHeight: 1.6 }}>{label}</span>
@@ -577,7 +587,7 @@ export default function Home() {
             </div>
 
             <span style={{ fontFamily: "monospace", fontSize: 10, color: C.xdim, lineHeight: 1.5 }}>
-              Fuente: Stack Overflow · The Ladders · NC State / Microsoft
+              {t.statsSource}
             </span>
           </div>
 
@@ -604,7 +614,7 @@ export default function Home() {
           {/* Pasos */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 48, width: "100%" }}>
             <h2 style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(24px, 4vw, 32px)", color: C.white, margin: 0 }}>
-              Cómo funciona
+              {t.howTitle}
             </h2>
             <div
               ref={howSectionRef}
@@ -614,8 +624,8 @@ export default function Home() {
               }
             >
               {(isMobile
-                ? [HOW_IT_WORKS[0], HOW_IT_WORKS[2], HOW_IT_WORKS[1]]
-                : HOW_IT_WORKS
+                ? [t.howSteps[0], t.howSteps[2], t.howSteps[1]]
+                : t.howSteps
               ).map((item, i, arr) => (
                 <div
                   key={item.title}
@@ -647,30 +657,14 @@ export default function Home() {
           {/* Lo que te llevás */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 48, width: "100%" }}>
             <h2 style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(24px, 4vw, 32px)", color: C.white, margin: 0 }}>
-              Lo que te llevás
+              {t.takesTitle}
             </h2>
             <div style={{
               display: "grid",
               gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
               gap: 16, maxWidth: 860, width: "100%",
             }}>
-              {[
-                {
-                  title: "Tu historial, tu curva",
-                  stat: "Cada sesión",
-                  desc: "Cada entrevista queda guardada con su score, temas y código. Ves exactamente cómo evoluciona tu desempeño sesión a sesión.",
-                },
-                {
-                  title: "Score al instante",
-                  stat: "0–10",
-                  desc: "Un número concreto al terminar. No \"estuvo bien\". Sabes tu puntaje, los temas fuertes y dónde perdiste puntos.",
-                },
-                {
-                  title: "Tolerancia a la presión",
-                  stat: "+50%",
-                  desc: "Practicar con observador activo entrena tu mente para el estrés real. Cuando llegue la entrevista de verdad, ya lo viviste.",
-                },
-              ].map(({ title, stat, desc }) => (
+              {t.takes.map(({ title, stat, desc }) => (
                 <div
                   key={title}
                   style={{
@@ -700,10 +694,10 @@ export default function Home() {
         }}>
           <div style={{ textAlign: "center", display: "flex", flexDirection: "column", gap: 12 }}>
             <h2 style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(24px, 4vw, 36px)", color: C.white, margin: 0 }}>
-              Cómo conviven las IAs
+              {t.archTitle}
             </h2>
             <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0 }}>
-              Portal sincroniza todo en tiempo real.
+              {t.archSub}
             </p>
           </div>
 
@@ -825,11 +819,7 @@ export default function Home() {
           {/* Columnas explicativas */}
           <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", borderTop: `1px solid ${C.borderLo}`, paddingTop: 48 }}>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 1fr))", gap: isMobile ? 24 : 32 }}>
-              {[
-                { title: "Portal como canal",       body: "Cada mensaje, cada transcripción y cada respuesta pasan por un canal Portal en tiempo real. No hay polling. No hay delay artificial." },
-                { title: "Dos agentes, un contexto", body: "Ana y el Observador comparten el mismo historial de conversación a través del canal. Cuando el Observador interrumpe, Ana lo sabe." },
-                { title: "Feedback en vivo",         body: "El canal registra timestamps, silencios y patrones. Al terminar, el análisis es sobre lo que realmente pasó, no sobre lo que recordaste." },
-              ].map(({ title, body }) => (
+              {t.archCols.map(({ title, body }) => (
                 <div key={title} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   <p style={{ fontFamily: "monospace", fontSize: 13, color: C.hi, margin: 0 }}>{title}</p>
                   <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.8 }}>{body}</p>
@@ -865,7 +855,7 @@ export default function Home() {
           </span>
           <span style={{ fontFamily: "monospace", fontSize: 11, color: "#666" }}>
             <span style={{ fontFamily: "Manuscribe, serif", color: "#fff" }}>Poised</span>
-            {" · The Realtime Hackathon 2026"}
+            {` · ${t.footerHack}`}
           </span>
         </footer>
 
@@ -944,11 +934,11 @@ export default function Home() {
             </button>
 
             <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0 }}>
-              Configura tu sesión
+              {t.configTitle}
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.low, margin: 0 }}>duración</p>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.low, margin: 0 }}>{t.duration}</p>
               <div style={{ display: "flex", gap: 8 }}>
                 {DURATIONS.map((d) => (
                   <button
@@ -981,7 +971,7 @@ export default function Home() {
               onMouseEnter={(e) => (e.currentTarget.style.background = "#e4e4e7")}
               onMouseLeave={(e) => (e.currentTarget.style.background = C.white)}
             >
-              Comenzar
+              {t.startSession}
             </button>
           </div>
         </div>

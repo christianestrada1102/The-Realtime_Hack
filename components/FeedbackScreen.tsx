@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useBreakpoint } from "@/lib/useIsMobile";
+import { useLang } from "@/lib/LangContext";
 import type { FeedbackData } from "@/app/api/feedback/route";
 
 type HistoryEntry = { role: "user" | "interviewer"; content: string };
@@ -24,6 +25,7 @@ export function FeedbackScreen({ history, duration }: Props) {
   const router = useRouter();
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
+  const { lang, t } = useLang();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackData | null>(null);
@@ -36,7 +38,7 @@ export function FeedbackScreen({ history, duration }: Props) {
         const res = await fetch("/api/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ history }),
+          body: JSON.stringify({ history, lang }),
         });
         const data = await res.json();
         if (!res.ok || data.error) { setError(data.error ?? "Error al generar feedback"); return; }
@@ -91,14 +93,14 @@ export function FeedbackScreen({ history, duration }: Props) {
           fontFamily: "monospace", fontSize: 11, color: "#555",
           textAlign: "center", marginBottom: 48, letterSpacing: "0.08em",
         }}>
-          resultado de tu entrevista
+          {t.resultSubtitle}
         </p>
 
         {/* Loading */}
         {loading && (
           <div style={{ textAlign: "center", paddingTop: 80 }}>
             <p style={{ fontFamily: "monospace", fontSize: 13, color: "#555" }}>
-              Analizando tu entrevista
+              {t.analyzing}
               <span style={{ animation: "dots 1.2s steps(3, end) infinite" }}>...</span>
             </p>
           </div>
@@ -111,8 +113,30 @@ export function FeedbackScreen({ history, duration }: Props) {
           </p>
         )}
 
+        {/* Empty session */}
+        {feedback && feedback.score === 0 && feedback.summary.includes("sin conversación") && (
+          <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 24, paddingTop: 40 }}>
+            <p style={{ fontFamily: "monospace", fontSize: 13, color: "#555", margin: 0 }}>
+              {t.noActivity}
+            </p>
+            <p style={{ fontFamily: "monospace", fontSize: 11, color: "#444", maxWidth: 320, lineHeight: 1.8, margin: 0 }}>
+              {feedback.recommendation}
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              style={{
+                background: "none", border: "1px solid #333", borderRadius: 6,
+                color: "#fff", fontFamily: "monospace", fontSize: 13,
+                padding: "12px 28px", cursor: "pointer", marginTop: 8,
+              }}
+            >
+              {t.newInterview}
+            </button>
+          </div>
+        )}
+
         {/* Feedback */}
-        {feedback && (
+        {feedback && !(feedback.score === 0 && feedback.summary.includes("sin conversación")) && (
           <div style={{ display: "flex", flexDirection: "column", gap: 48 }}>
 
             {/* Score */}
@@ -139,7 +163,7 @@ export function FeedbackScreen({ history, duration }: Props) {
             {/* Topics */}
             <div style={useFadeIn(1, visible)}>
               <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginBottom: 12 }}>
-                temas evaluados
+                {t.topicsEval}
               </p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {feedback.topics.map((t, i) => (
@@ -153,7 +177,7 @@ export function FeedbackScreen({ history, duration }: Props) {
               <div style={{ ...useFadeIn(2, visible), borderTop: "1px solid #1a1a1a", paddingTop: 32 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                   <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", margin: 0 }}>
-                    ejercicio de código
+                    {t.codeExercise}
                   </p>
                   <span style={{
                     fontFamily: "monospace", fontSize: 10,
@@ -193,7 +217,7 @@ export function FeedbackScreen({ history, duration }: Props) {
             }}>
               <div>
                 <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginBottom: 12 }}>
-                  lo que dominaste
+                  {t.whatNailed}
                 </p>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                   {feedback.strengths.map((s, i) => (
@@ -205,7 +229,7 @@ export function FeedbackScreen({ history, duration }: Props) {
               </div>
               <div>
                 <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginBottom: 12 }}>
-                  donde mejorar
+                  {t.whereImprove}
                 </p>
                 <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
                   {feedback.weaknesses.map((w, i) => (
@@ -220,7 +244,7 @@ export function FeedbackScreen({ history, duration }: Props) {
             {/* Recommendation */}
             <div style={{ ...useFadeIn(4, visible), borderTop: "1px solid #1a1a1a", paddingTop: 32 }}>
               <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", marginBottom: 12 }}>
-                proximos pasos
+                {t.nextSteps}
               </p>
               <p style={{ fontFamily: "monospace", fontSize: 13, color: "#888", lineHeight: 1.8 }}>
                 {feedback.recommendation}
@@ -244,7 +268,7 @@ export function FeedbackScreen({ history, duration }: Props) {
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#555")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#333")}
               >
-                Nueva entrevista
+                {t.newInterview}
               </button>
             </div>
           </div>
