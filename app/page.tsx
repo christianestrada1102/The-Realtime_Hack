@@ -337,17 +337,6 @@ export default function Home() {
                 </a>
               );
             })}
-            <a
-              href="/historial"
-              style={{
-                fontFamily: "monospace", fontSize: 11, color: C.low,
-                textDecoration: "none", transition: "color 0.2s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = C.white)}
-              onMouseLeave={(e) => (e.currentTarget.style.color = C.low)}
-            >
-              Historial
-            </a>
           </div>
         )}
 
