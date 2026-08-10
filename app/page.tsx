@@ -235,7 +235,8 @@ export default function Home() {
   }, []);
 
   function handleStart() {
-    router.push(`/session/test-session?duration=${duration}`);
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    router.push(`/session/${id}?duration=${duration}`);
   }
 
   return (
