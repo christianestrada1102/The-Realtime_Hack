@@ -2,9 +2,9 @@
 
 import { useRef } from "react";
 
-const SILENCE_THRESHOLD = 15;
-const SILENCE_DURATION_MS = 1200;
-const NO_SPEECH_TIMEOUT_MS = 3000;
+const SILENCE_THRESHOLD = 8;
+const SILENCE_DURATION_MS = 1500;
+const NO_SPEECH_TIMEOUT_MS = 5000;
 const NUM_BARS = 5;
 
 export function useSilenceDetector() {
