@@ -623,6 +623,57 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Lo que te llevás ── */}
+        <section style={{
+          padding: isMobile ? "64px 24px" : "80px 40px",
+          borderTop: `1px solid ${C.borderLo}`,
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 48,
+        }}>
+          <h2 style={{
+            fontFamily: "Manuscribe, serif",
+            fontSize: "clamp(24px, 4vw, 32px)",
+            color: C.white, margin: 0, textAlign: "center",
+          }}>
+            Lo que te llevás
+          </h2>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+            gap: 16, maxWidth: 860, width: "100%",
+          }}>
+            {[
+              {
+                title: "Historial de sesiones",
+                desc: "Cada entrevista queda guardada. Ve tu progreso y cómo mejoras con el tiempo.",
+              },
+              {
+                title: "Feedback real",
+                desc: "Score, temas fuertes y áreas de mejora generados por IA al terminar cada sesión.",
+              },
+              {
+                title: "Presión controlada",
+                desc: "Dos IAs coordinadas por Portal. Una entrevista, una observa. Nunca te relajas.",
+              },
+            ].map(({ title, desc }) => (
+              <div
+                key={title}
+                style={{
+                  background: "#0f0f0f", border: "1px solid #1a1a1a",
+                  borderRadius: 4, padding: 24,
+                  display: "flex", flexDirection: "column", gap: 12,
+                  transition: "border-color 200ms",
+                  cursor: "default",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1a1a1a")}
+              >
+                <p style={{ fontFamily: "monospace", fontSize: 13, color: C.white, margin: 0 }}>{title}</p>
+                <p style={{ fontFamily: "monospace", fontSize: 11, color: "#333", margin: 0, lineHeight: 1.7 }}>{desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* ── Arquitectura en tiempo real ── */}
         <section id="arch" ref={archSectionRef} style={{
           padding: "100px 24px", borderTop: `1px solid ${C.borderLo}`,
