@@ -649,13 +649,26 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       </div>
 
       {/* ── Panel de transcripcion ── */}
+      {/* Mobile: overlay + drawer 85% from right */}
+      {isMobile && showTranscript && (
+        <div
+          onClick={() => setShowTranscript(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 29,
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        />
+      )}
       <div style={{
         position: "fixed",
-        top: 0, right: 0, bottom: 0,
-        width: isMobile ? "100%" : 360,
+        right: 0,
+        ...(isMobile
+          ? { top: 0, bottom: 0, width: "85%", maxHeight: "100vh" }
+          : { top: 0, bottom: 0, width: 360 }),
         backgroundColor: "#0f0f0f",
-        borderLeft: isMobile ? "none" : "2px solid #222",
-        zIndex: 30, display: "flex", flexDirection: "column",
+        borderLeft: "1px solid #222",
+        zIndex: 30,
+        display: "flex", flexDirection: "column",
         transform: showTranscript ? "translateX(0)" : "translateX(100%)",
         transition: "transform 0.25s ease",
       }}>
@@ -668,9 +681,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           <button
             onClick={() => setShowTranscript(false)}
             style={{
-              fontFamily: "monospace", fontSize: 18, color: "#555",
+              fontFamily: "monospace", fontSize: 20, color: "#555",
               background: "none", border: "none", cursor: "pointer",
-              lineHeight: 1, transition: "color 200ms",
+              lineHeight: 1, padding: "0 4px", transition: "color 200ms",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
@@ -678,7 +691,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
             ×
           </button>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px", display: "flex", flexDirection: "column" }}>
+        <div style={{
+          flex: 1, overflowY: "auto", padding: "20px",
+          display: "flex", flexDirection: "column",
+          ...(isMobile ? { maxHeight: "calc(100vh - 48px)" } : {}),
+        }}>
           {historyDisplay.map((m, i) => (
             <div key={i} style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
               <span style={{ fontFamily: "monospace", fontSize: 10, color: "#555" }}>
