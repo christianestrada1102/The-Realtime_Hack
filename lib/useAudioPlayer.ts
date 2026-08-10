@@ -95,16 +95,15 @@ export function useAudioPlayer() {
       const url = URL.createObjectURL(blob);
       urlRef.current = url;
 
-      // Reuse the element that was unlocked during the iOS tap gesture.
-      // Do NOT call pause() before changing src — it breaks iOS playback state.
-      const audio = baseElRef.current ?? (() => {
+      // iOS requires reusing the same element that was unlocked during the tap gesture.
+      // Other browsers (Chrome, Firefox) allow fresh elements after any user gesture.
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const audio = (isIOS && baseElRef.current) ? baseElRef.current : (() => {
         const el = document.createElement("audio");
         el.setAttribute("playsinline", "");
         el.setAttribute("preload", "auto");
-        baseElRef.current = el;
         return el;
       })();
-      // Clear stale handlers before reuse
       audio.onended = null;
       audio.onerror = null;
       audioRef.current = audio;
