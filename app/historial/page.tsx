@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FeedbackData } from "@/app/api/feedback/route";
 import { useLang } from "@/lib/LangContext";
+import { useBreakpoint } from "@/lib/useIsMobile";
 
 type SessionRow = {
   id: string;
@@ -41,6 +42,7 @@ const C = {
 export default function HistorialPage() {
   const router = useRouter();
   const { t } = useLang();
+  const isMobile = useBreakpoint() === "mobile";
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<SessionDetail | null>(null);
@@ -116,24 +118,54 @@ export default function HistorialPage() {
 
         {/* Stats */}
         {!loading && sessions.length > 0 && (
-          <div style={{
-            display: "flex", alignItems: "stretch",
-            borderTop: `1px solid #1a1a1a`, borderBottom: `1px solid #1a1a1a`,
-            margin: "0 0 48px", padding: "24px 0",
-          }}>
-            <StatBlock value={String(totalCount)} label={t.total} />
-            <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
-            <StatBlock value={bestScore != null ? bestScore.toFixed(1) : "—"} label={t.bestScore} />
-            <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
-            <StatBlock value={avgScore != null ? avgScore.toFixed(1) : "—"} label={t.average} />
-            <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
-            <div style={{ flex: 1, textAlign: "center", padding: "0 8px" }}>
-              <p style={{ fontFamily: "monospace", fontSize: 18, color: trendColor, margin: "0 0 6px", lineHeight: 1.6 }}>
-                {trend}
-              </p>
-              <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>{t.trend}</p>
+          isMobile ? (
+            <div style={{
+              display: "grid", gridTemplateColumns: "1fr 1fr",
+              borderTop: `1px solid #1a1a1a`, borderBottom: `1px solid #1a1a1a`,
+              margin: "0 0 48px",
+            }}>
+              {[
+                { value: String(totalCount), label: t.total },
+                { value: bestScore != null ? bestScore.toFixed(1) : "—", label: t.bestScore },
+                { value: avgScore != null ? avgScore.toFixed(1) : "—", label: t.average },
+                { value: trend, label: t.trend, color: trendColor, mono: true },
+              ].map(({ value, label, color, mono }, i) => (
+                <div key={label} style={{
+                  textAlign: "center", padding: "20px 8px",
+                  borderRight: i % 2 === 0 ? `1px solid #1a1a1a` : "none",
+                  borderBottom: i < 2 ? `1px solid #1a1a1a` : "none",
+                }}>
+                  <p style={{
+                    fontFamily: mono ? "monospace" : "Manuscribe, serif",
+                    fontSize: mono ? 13 : 28,
+                    color: color ?? C.white, margin: "0 0 6px", lineHeight: 1,
+                  }}>
+                    {value}
+                  </p>
+                  <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>{label}</p>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div style={{
+              display: "flex", alignItems: "stretch",
+              borderTop: `1px solid #1a1a1a`, borderBottom: `1px solid #1a1a1a`,
+              margin: "0 0 48px", padding: "24px 0",
+            }}>
+              <StatBlock value={String(totalCount)} label={t.total} />
+              <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
+              <StatBlock value={bestScore != null ? bestScore.toFixed(1) : "—"} label={t.bestScore} />
+              <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
+              <StatBlock value={avgScore != null ? avgScore.toFixed(1) : "—"} label={t.average} />
+              <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
+              <div style={{ flex: 1, textAlign: "center", padding: "0 8px" }}>
+                <p style={{ fontFamily: "monospace", fontSize: 18, color: trendColor, margin: "0 0 6px", lineHeight: 1.6 }}>
+                  {trend}
+                </p>
+                <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>{t.trend}</p>
+              </div>
+            </div>
+          )
         )}
 
         {/* List */}
