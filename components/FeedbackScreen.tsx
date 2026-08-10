@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useBreakpoint } from "@/lib/useIsMobile";
 import type { FeedbackData } from "@/app/api/feedback/route";
 
@@ -247,17 +246,6 @@ export function FeedbackScreen({ history, duration }: Props) {
               >
                 Nueva entrevista
               </button>
-              <div style={{ marginTop: 16 }}>
-                <Link
-                  href="/historial"
-                  style={{
-                    fontFamily: "monospace", fontSize: 11, color: "#555",
-                    textDecoration: "none",
-                  }}
-                >
-                  Ver historial →
-                </Link>
-              </div>
             </div>
           </div>
         )}

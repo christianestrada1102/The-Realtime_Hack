@@ -23,6 +23,27 @@ function unlockIOSAudio() {
   } catch {}
 }
 
+function playEndTone(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.8);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.8);
+      osc.onended = () => { ctx.close(); resolve(); };
+    } catch {
+      resolve();
+    }
+  });
+}
+
 const CodeEditor = dynamic(() => import("./CodeEditor").then((m) => m.CodeEditor), { ssr: false });
 
 type ChatContent = { text: string; role?: "user" | "interviewer" | "observer" };
@@ -37,7 +58,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const channelId = `session-${sessionId}`;
   const { send, status } = useChannel<ChatContent>({ channelId });
   const { startRecording, stopRecording, cancelRecording } = useVoiceRecorder();
-  const { speak } = useAudioPlayer();
+  const { speak, stop: stopAudio } = useAudioPlayer();
   const { startDetecting, stopDetecting } = useSilenceDetector();
 
   const [textMode, setTextMode] = useState(false);
@@ -72,6 +93,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
+  const interviewAbortRef = useRef<AbortController | null>(null);
 
   const historyRef = useRef<HistoryEntry[]>([]);
   const [historyDisplay, setHistoryDisplay] = useState<HistoryEntry[]>([]);
@@ -110,16 +132,12 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       if (left === 0 && !timeUpRef.current) {
         timeUpRef.current = true;
         clearInterval(t);
-        const closing = "Perfecto, se nos acabó el tiempo. Fue una buena sesión — revisaremos todo y te avisamos. Gracias.";
-        send({ content: { text: closing, role: "interviewer" } });
-        appendHistory({ role: "interviewer", content: closing });
-        setLastInterviewerMsg(closing);
-        setMsgKey((k) => k + 1);
-        setPhase("speaking");
-        speak(closing, () => {
-          stopDetecting();
-          cancelRecording();
-          localStorage.setItem(`session-ended-${sessionId}`, "true");
+        interviewAbortRef.current?.abort();
+        stopAudio();
+        stopDetecting();
+        cancelRecording();
+        localStorage.setItem(`session-ended-${sessionId}`, "true");
+        playEndTone().then(() => {
           setPhase("ended");
           setShowFeedback(true);
         });
@@ -141,6 +159,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
 
   async function callInterviewer(message: string) {
     setPhase("processing");
+    interviewAbortRef.current?.abort();
+    const controller = new AbortController();
+    interviewAbortRef.current = controller;
     try {
       const iRes = await fetch("/api/interview", {
         method: "POST",
@@ -150,6 +171,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
           history: historyRef.current.slice(0, -1),
           config: { type: "tecnica", level: "mid", language: "es" },
         }),
+        signal: controller.signal,
       });
       const iData = await iRes.json();
       if (!iRes.ok || iData.error) {
@@ -169,7 +191,8 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       setMsgKey((k) => k + 1);
       setPhase("speaking");
       speak(reply, () => startListeningRef.current());
-    } catch {
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
       setError("Error al contactar al entrevistador");
       setPhase("idle");
     }
@@ -284,7 +307,9 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   }, [sessionStarted, phase]);
 
   function confirmLeave() {
-    stopDetecting(); cancelRecording();
+    stopAudio();
+    stopDetecting();
+    cancelRecording();
     const dest = pendingNavigation;
     setPendingNavigation(null);
     setPhase("ended");
@@ -292,9 +317,15 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   }
   function cancelLeave() { setPendingNavigation(null); }
   function handleEnd() {
-    stopDetecting(); cancelRecording();
+    interviewAbortRef.current?.abort();
+    stopAudio();
+    stopDetecting();
+    cancelRecording();
     localStorage.setItem(`session-ended-${sessionId}`, "true");
-    setPhase("ended"); setShowFeedback(true);
+    playEndTone().then(() => {
+      setPhase("ended");
+      setShowFeedback(true);
+    });
   }
 
   const isSpeaking = phase === "speaking";
