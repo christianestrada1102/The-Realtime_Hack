@@ -290,7 +290,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const isSpeaking = phase === "speaking";
   const isListening = phase === "listening";
 
-  if (showFeedback) return <FeedbackScreen history={historyRef.current} />;
+  if (showFeedback) return <FeedbackScreen history={historyRef.current} duration={totalSeconds} />;
 
   // iOS requires audio to be triggered from a direct user gesture.
   // Show a tap gate on mobile so we can unlock the audio engine before starting.

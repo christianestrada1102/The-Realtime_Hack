@@ -9,6 +9,7 @@ type HistoryEntry = { role: "user" | "interviewer"; content: string };
 
 interface Props {
   history: HistoryEntry[];
+  duration?: number;
 }
 
 function useFadeIn(index: number, ready: boolean) {
@@ -19,7 +20,7 @@ function useFadeIn(index: number, ready: boolean) {
   };
 }
 
-export function FeedbackScreen({ history }: Props) {
+export function FeedbackScreen({ history, duration }: Props) {
   const router = useRouter();
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
@@ -27,6 +28,7 @@ export function FeedbackScreen({ history }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackData | null>(null);
   const [visible, setVisible] = useState(false);
+  const [sessionId] = useState(() => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
   useEffect(() => {
     async function load() {
@@ -39,8 +41,19 @@ export function FeedbackScreen({ history }: Props) {
         const data = await res.json();
         if (!res.ok || data.error) { setError(data.error ?? "Error al generar feedback"); return; }
         setFeedback(data as FeedbackData);
-        // Trigger stagger after a small paint delay
         setTimeout(() => setVisible(true), 60);
+        // Persist session — fire and forget
+        fetch("/api/sessions/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: sessionId,
+            duration: duration ?? null,
+            history,
+            feedback: data,
+            score: Math.round(data.score ?? 0),
+          }),
+        }).catch(() => {});
       } catch {
         setError("No se pudo conectar con el servidor");
       } finally {
@@ -233,6 +246,19 @@ export function FeedbackScreen({ history }: Props) {
               >
                 Nueva entrevista
               </button>
+              <div style={{ marginTop: 16 }}>
+                <a
+                  href="/historial"
+                  style={{
+                    fontFamily: "monospace", fontSize: 11, color: "#555",
+                    textDecoration: "none", transition: "color 200ms",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "#888")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
+                >
+                  Ver historial →
+                </a>
+              </div>
             </div>
           </div>
         )}
