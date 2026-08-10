@@ -95,13 +95,15 @@ export function useAudioPlayer() {
       const url = URL.createObjectURL(blob);
       urlRef.current = url;
 
-      // Reuse the base element that was unlocked during the iOS tap gesture
-      const audio = baseElRef.current ?? (() => {
-        const el = document.createElement("audio");
-        el.setAttribute("playsinline", "");
-        el.setAttribute("preload", "auto");
-        return el;
-      })();
+      // Use the base element that was unlocked during the iOS tap gesture.
+      // Clear all previous handlers before reuse to avoid stacked callbacks.
+      const base = baseElRef.current;
+      const audio = base ?? document.createElement("audio");
+      audio.onended = null;
+      audio.onerror = null;
+      audio.pause();
+      audio.setAttribute("playsinline", "");
+      audio.setAttribute("preload", "auto");
       audioRef.current = audio;
 
       audio.src = url;

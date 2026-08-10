@@ -28,6 +28,7 @@ export function useSilenceDetector() {
 
     const ctx = new AudioContext();
     contextRef.current = ctx;
+    ctx.resume().catch(() => {});
 
     const source = ctx.createMediaStreamSource(stream);
     const analyser = ctx.createAnalyser();
