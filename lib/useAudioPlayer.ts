@@ -23,7 +23,7 @@ export function useAudioPlayer() {
   const abortRef = useRef<AbortController | null>(null);
   const stoppedIntentionally = useRef(false);
 
-  // Keep a stable base element for iOS playsinline support
+  // Keep a stable base element — used to unlock HTMLAudioElement on iOS during a user gesture
   const baseElRef = useRef<HTMLAudioElement | null>(null);
   useEffect(() => {
     const el = document.createElement("audio");
@@ -31,6 +31,14 @@ export function useAudioPlayer() {
     el.setAttribute("preload", "auto");
     baseElRef.current = el;
     return () => { el.pause(); baseElRef.current = null; };
+  }, []);
+
+  // Call this from a direct user gesture (tap) on iOS to unlock HTMLAudio playback
+  const unlockAudio = useCallback(() => {
+    unlockAudioContext();
+    const el = baseElRef.current;
+    if (!el) return;
+    el.play().then(() => el.pause()).catch(() => {});
   }, []);
 
   const stop = useCallback(() => {
@@ -87,10 +95,13 @@ export function useAudioPlayer() {
       const url = URL.createObjectURL(blob);
       urlRef.current = url;
 
-      // Create a fresh Audio element per speak() call — avoids src-swap race on iOS
-      const audio = document.createElement("audio");
-      audio.setAttribute("playsinline", "");
-      audio.setAttribute("preload", "auto");
+      // Reuse the base element that was unlocked during the iOS tap gesture
+      const audio = baseElRef.current ?? (() => {
+        const el = document.createElement("audio");
+        el.setAttribute("playsinline", "");
+        el.setAttribute("preload", "auto");
+        return el;
+      })();
       audioRef.current = audio;
 
       audio.src = url;
@@ -136,5 +147,5 @@ export function useAudioPlayer() {
     }
   }, [stop]);
 
-  return { speak, stop, isSpeaking };
+  return { speak, stop, isSpeaking, unlockAudio };
 }
