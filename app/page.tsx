@@ -233,7 +233,7 @@ export default function Home() {
 
   // IntersectionObserver para sección activa en navbar
   useEffect(() => {
-    const ids = ["problema", "como", "llevas", "arch"];
+    const ids = ["problema", "como", "arch"];
     const observers: IntersectionObserver[] = [];
     ids.forEach((id) => {
       const el = document.getElementById(id);
@@ -309,10 +309,9 @@ export default function Home() {
         {!isMobile && (
           <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
             {[
-              { label: "El problema",    href: "#problema", id: "problema" },
-              { label: "Cómo funciona",  href: "#como",     id: "como" },
-              { label: "Lo que ganás",   href: "#llevas",   id: "llevas" },
-              { label: "Arquitectura",   href: "#arch",     id: "arch" },
+              { label: "El problema",   href: "#problema", id: "problema" },
+              { label: "Cómo funciona", href: "#como",     id: "como" },
+              { label: "Arquitectura",  href: "#arch",     id: "arch" },
             ].map(({ label, href, id }) => {
               const isActive = activeSection === id;
               return (
@@ -433,7 +432,6 @@ export default function Home() {
             {[
               { label: "El problema",   href: "#problema" },
               { label: "Cómo funciona", href: "#como" },
-              { label: "Lo que ganás",  href: "#llevas" },
               { label: "Arquitectura",  href: "#arch" },
             ].map(({ label, href }) => (
               <a
@@ -607,103 +605,102 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Cómo funciona ── */}
+        {/* ── Cómo funciona + Lo que te llevás ── */}
         <section id="como" style={{
-          padding: "80px 24px", display: "flex", flexDirection: "column",
-          alignItems: "center", gap: 48, borderTop: `1px solid ${C.borderLo}`,
-        }}>
-          <h2 style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(24px, 4vw, 32px)", color: C.white, margin: 0 }}>
-            Cómo funciona
-          </h2>
-          <div
-            ref={howSectionRef}
-            style={isMobile
-              ? { display: "flex", flexDirection: "column", width: "100%", maxWidth: 400 }
-              : { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0, maxWidth: 760, width: "100%" }
-            }
-          >
-            {(isMobile
-              ? [HOW_IT_WORKS[0], HOW_IT_WORKS[2], HOW_IT_WORKS[1]]
-              : HOW_IT_WORKS
-            ).map((item, i, arr) => (
-              <div
-                key={item.title}
-                className="how-col"
-                style={isMobile ? {
-                  borderBottom: i < arr.length - 1 ? `1px solid #1a1a1a` : "none",
-                  padding: "24px 0",
-                  display: "flex", flexDirection: "column", gap: 10, opacity: 0,
-                  alignItems: "center", textAlign: "center",
-                } : {
-                  borderTop: `1px solid ${C.border}`,
-                  borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
-                  padding: "24px 32px 24px 0",
-                  paddingLeft: i === 0 ? 0 : 32,
-                  display: "flex", flexDirection: "column", gap: 10, opacity: 0,
-                }}
-              >
-                <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim }}>{item.step}</span>
-                <p style={{ fontFamily: "monospace", fontSize: 13, color: C.hi, margin: 0 }}>{item.title}</p>
-                <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.7 }}>{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Lo que te llevás ── */}
-        <section id="llevas" style={{
-          padding: isMobile ? "64px 24px" : "80px 40px",
+          padding: isMobile ? "64px 24px 80px" : "80px 40px 100px",
           borderTop: `1px solid ${C.borderLo}`,
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 48,
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 64,
         }}>
-          <h2 style={{
-            fontFamily: "Manuscribe, serif",
-            fontSize: "clamp(24px, 4vw, 32px)",
-            color: C.white, margin: 0, textAlign: "center",
-          }}>
-            Lo que te llevás
-          </h2>
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
-            gap: 16, maxWidth: 860, width: "100%",
-          }}>
-            {[
-              {
-                title: "Tu historial, tu curva",
-                stat: "Cada sesión",
-                desc: "Cada entrevista queda guardada con su score, temas y código. Ves exactamente cómo evoluciona tu desempeño sesión a sesión.",
-              },
-              {
-                title: "Score al instante",
-                stat: "0–10",
-                desc: "Un número concreto al terminar. No \"estuvo bien\". Sabes tu puntaje, los temas fuertes y dónde perdiste puntos.",
-              },
-              {
-                title: "Tolerancia a la presión",
-                stat: "+50% rendimiento",
-                desc: "Practicar con observador activo entrena tu mente para el estrés real. Cuando llegue la entrevista de verdad, ya lo viviste.",
-              },
-            ].map(({ title, stat, desc }) => (
-              <div
-                key={title}
-                style={{
-                  background: "#0f0f0f", border: "1px solid #1a1a1a",
-                  borderRadius: 4, padding: 24,
-                  display: "flex", flexDirection: "column", gap: 16,
-                  transition: "border-color 200ms",
-                  cursor: "default",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1a1a1a")}
-              >
-                <span style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: C.white, lineHeight: 1 }}>{stat}</span>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <p style={{ fontFamily: "monospace", fontSize: 12, color: C.hi, margin: 0 }}>{title}</p>
-                  <p style={{ fontFamily: "monospace", fontSize: 11, color: C.mid, margin: 0, lineHeight: 1.7 }}>{desc}</p>
+
+          {/* Pasos */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 48, width: "100%" }}>
+            <h2 style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(24px, 4vw, 32px)", color: C.white, margin: 0 }}>
+              Cómo funciona
+            </h2>
+            <div
+              ref={howSectionRef}
+              style={isMobile
+                ? { display: "flex", flexDirection: "column", width: "100%", maxWidth: 400 }
+                : { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0, maxWidth: 760, width: "100%" }
+              }
+            >
+              {(isMobile
+                ? [HOW_IT_WORKS[0], HOW_IT_WORKS[2], HOW_IT_WORKS[1]]
+                : HOW_IT_WORKS
+              ).map((item, i, arr) => (
+                <div
+                  key={item.title}
+                  className="how-col"
+                  style={isMobile ? {
+                    borderBottom: i < arr.length - 1 ? `1px solid #1a1a1a` : "none",
+                    padding: "24px 0",
+                    display: "flex", flexDirection: "column", gap: 10, opacity: 0,
+                    alignItems: "center", textAlign: "center",
+                  } : {
+                    borderTop: `1px solid ${C.border}`,
+                    borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
+                    padding: "24px 32px 24px 0",
+                    paddingLeft: i === 0 ? 0 : 32,
+                    display: "flex", flexDirection: "column", gap: 10, opacity: 0,
+                  }}
+                >
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim }}>{item.step}</span>
+                  <p style={{ fontFamily: "monospace", fontSize: 13, color: C.hi, margin: 0 }}>{item.title}</p>
+                  <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.7 }}>{item.desc}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Divisor */}
+          <div style={{ width: "100%", maxWidth: 860, height: 1, backgroundColor: C.borderLo }} />
+
+          {/* Lo que te llevás */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 48, width: "100%" }}>
+            <h2 style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(24px, 4vw, 32px)", color: C.white, margin: 0 }}>
+              Lo que te llevás
+            </h2>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)",
+              gap: 16, maxWidth: 860, width: "100%",
+            }}>
+              {[
+                {
+                  title: "Tu historial, tu curva",
+                  stat: "Cada sesión",
+                  desc: "Cada entrevista queda guardada con su score, temas y código. Ves exactamente cómo evoluciona tu desempeño sesión a sesión.",
+                },
+                {
+                  title: "Score al instante",
+                  stat: "0–10",
+                  desc: "Un número concreto al terminar. No \"estuvo bien\". Sabes tu puntaje, los temas fuertes y dónde perdiste puntos.",
+                },
+                {
+                  title: "Tolerancia a la presión",
+                  stat: "+50%",
+                  desc: "Practicar con observador activo entrena tu mente para el estrés real. Cuando llegue la entrevista de verdad, ya lo viviste.",
+                },
+              ].map(({ title, stat, desc }) => (
+                <div
+                  key={title}
+                  style={{
+                    background: "#0f0f0f", border: "1px solid #1a1a1a",
+                    borderRadius: 4, padding: 24,
+                    display: "flex", flexDirection: "column", gap: 16,
+                    transition: "border-color 200ms", cursor: "default",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333")}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1a1a1a")}
+                >
+                  <span style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: C.white, lineHeight: 1 }}>{stat}</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <p style={{ fontFamily: "monospace", fontSize: 12, color: C.hi, margin: 0 }}>{title}</p>
+                    <p style={{ fontFamily: "monospace", fontSize: 11, color: C.mid, margin: 0, lineHeight: 1.7 }}>{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
