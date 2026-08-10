@@ -53,9 +53,9 @@ const DURATIONS = [
 ];
 
 const HOW_IT_WORKS = [
-  { title: "Ana te entrevista",       desc: "Voz real. Preguntas técnicas. Sin piedad." },
-  { title: "El Observador presiona",  desc: "Una segunda IA detecta cuando bajas la guardia." },
-  { title: "Feedback inmediato",      desc: "Al terminar, sabes exactamente dónde fallaste." },
+  { step: "01", title: "Arranca la llamada",    desc: "Ana te saluda. Empieza con preguntas de presentación y escala a técnicas sin aviso." },
+  { step: "02", title: "El Observador entra",   desc: "Silencioso. Analiza tus respuestas en tiempo real. Si dudas demasiado, interrumpe." },
+  { step: "03", title: "Se acaba el tiempo",    desc: "30, 45 o 60 minutos. Cuando el reloj llega a cero, la entrevista termina. Sin prórroga." },
 ];
 
 // Paleta centralizada — un solo lugar para ajustar legibilidad
@@ -209,7 +209,7 @@ export default function Home() {
 
   // IntersectionObserver para sección activa en navbar
   useEffect(() => {
-    const ids = ["problema", "como", "arch"];
+    const ids = ["problema", "como", "llevas", "arch"];
     const observers: IntersectionObserver[] = [];
     ids.forEach((id) => {
       const el = document.getElementById(id);
@@ -285,9 +285,10 @@ export default function Home() {
         {!isMobile && (
           <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
             {[
-              { label: "El problema",   href: "#problema", id: "problema" },
-              { label: "Cómo funciona", href: "#como",     id: "como" },
-              { label: "Arquitectura",  href: "#arch",     id: "arch" },
+              { label: "El problema",    href: "#problema", id: "problema" },
+              { label: "Cómo funciona",  href: "#como",     id: "como" },
+              { label: "Lo que ganás",   href: "#llevas",   id: "llevas" },
+              { label: "Arquitectura",   href: "#arch",     id: "arch" },
             ].map(({ label, href, id }) => {
               const isActive = activeSection === id;
               return (
@@ -408,6 +409,7 @@ export default function Home() {
             {[
               { label: "El problema",   href: "#problema" },
               { label: "Cómo funciona", href: "#como" },
+              { label: "Lo que ganás",  href: "#llevas" },
               { label: "Arquitectura",  href: "#arch" },
             ].map(({ label, href }) => (
               <a
@@ -548,7 +550,7 @@ export default function Home() {
           borderTop: `1px solid ${C.borderLo}`,
         }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 32, width: isMobile ? "100%" : undefined, maxWidth: 280, textAlign: isMobile ? "center" : "left" }}>
-            <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid }}>El problema real</span>
+            <span style={{ fontFamily: "Manuscribe, serif", fontSize: "clamp(22px, 3vw, 28px)", color: C.white }}>El problema real</span>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               {[
@@ -557,7 +559,7 @@ export default function Home() {
                 { num: "50%+", label: "peor desempeño cuando hay un observador presente" },
               ].map(({ num, label }) => (
                 <div key={num} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ fontFamily: "monospace", fontSize: isMobile ? 20 : 24, color: C.white, lineHeight: 1 }}>{num}</span>
+                  <span style={{ fontFamily: "Manuscribe, serif", fontSize: isMobile ? 32 : 40, color: C.white, lineHeight: 1 }}>{num}</span>
                   <span style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, lineHeight: 1.6 }}>{label}</span>
                 </div>
               ))}
@@ -606,16 +608,17 @@ export default function Home() {
                 style={isMobile ? {
                   borderBottom: i < arr.length - 1 ? `1px solid #1a1a1a` : "none",
                   padding: "24px 0",
-                  display: "flex", flexDirection: "column", gap: 12, opacity: 0,
+                  display: "flex", flexDirection: "column", gap: 10, opacity: 0,
                   alignItems: "center", textAlign: "center",
                 } : {
                   borderTop: `1px solid ${C.border}`,
                   borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : "none",
                   padding: "24px 32px 24px 0",
                   paddingLeft: i === 0 ? 0 : 32,
-                  display: "flex", flexDirection: "column", gap: 12, opacity: 0,
+                  display: "flex", flexDirection: "column", gap: 10, opacity: 0,
                 }}
               >
+                <span style={{ fontFamily: "monospace", fontSize: 10, color: C.dim }}>{item.step}</span>
                 <p style={{ fontFamily: "monospace", fontSize: 13, color: C.hi, margin: 0 }}>{item.title}</p>
                 <p style={{ fontFamily: "monospace", fontSize: 12, color: C.mid, margin: 0, lineHeight: 1.7 }}>{item.desc}</p>
               </div>
@@ -624,7 +627,7 @@ export default function Home() {
         </section>
 
         {/* ── Lo que te llevás ── */}
-        <section style={{
+        <section id="llevas" style={{
           padding: isMobile ? "64px 24px" : "80px 40px",
           borderTop: `1px solid ${C.borderLo}`,
           display: "flex", flexDirection: "column", alignItems: "center", gap: 48,
@@ -643,32 +646,38 @@ export default function Home() {
           }}>
             {[
               {
-                title: "Historial de sesiones",
-                desc: "Cada entrevista queda guardada. Ve tu progreso y cómo mejoras con el tiempo.",
+                title: "Tu historial, tu curva",
+                stat: "∞ sesiones",
+                desc: "Cada entrevista queda guardada con su score, temas y código. Ves exactamente cómo evoluciona tu desempeño sesión a sesión.",
               },
               {
-                title: "Feedback real",
-                desc: "Score, temas fuertes y áreas de mejora generados por IA al terminar cada sesión.",
+                title: "Score al instante",
+                stat: "0–10",
+                desc: "Un número concreto al terminar. No \"estuvo bien\". Sabes tu puntaje, los temas fuertes y dónde perdiste puntos.",
               },
               {
-                title: "Presión controlada",
-                desc: "Dos IAs coordinadas por Portal. Una entrevista, una observa. Nunca te relajas.",
+                title: "Tolerancia a la presión",
+                stat: "+50% rendimiento",
+                desc: "Practicar con observador activo entrena tu mente para el estrés real. Cuando llegue la entrevista de verdad, ya lo viviste.",
               },
-            ].map(({ title, desc }) => (
+            ].map(({ title, stat, desc }) => (
               <div
                 key={title}
                 style={{
                   background: "#0f0f0f", border: "1px solid #1a1a1a",
                   borderRadius: 4, padding: 24,
-                  display: "flex", flexDirection: "column", gap: 12,
+                  display: "flex", flexDirection: "column", gap: 16,
                   transition: "border-color 200ms",
                   cursor: "default",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1a1a1a")}
               >
-                <p style={{ fontFamily: "monospace", fontSize: 13, color: C.white, margin: 0 }}>{title}</p>
-                <p style={{ fontFamily: "monospace", fontSize: 11, color: C.mid, margin: 0, lineHeight: 1.7 }}>{desc}</p>
+                <span style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: C.white, lineHeight: 1 }}>{stat}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <p style={{ fontFamily: "monospace", fontSize: 12, color: C.hi, margin: 0 }}>{title}</p>
+                  <p style={{ fontFamily: "monospace", fontSize: 11, color: C.mid, margin: 0, lineHeight: 1.7 }}>{desc}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -851,6 +860,7 @@ export default function Home() {
         </footer>
 
         <style>{`
+          html { scroll-behavior: smooth; }
           @keyframes modal-bg-in {
             from { opacity: 0; }
             to   { opacity: 1; }
