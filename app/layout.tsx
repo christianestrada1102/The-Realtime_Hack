@@ -8,6 +8,27 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Poised",
   description: "Simulador de entrevistas técnicas con presión real",
+  openGraph: {
+    title: "Poised",
+    description: "Simulador de entrevistas técnicas con presión real",
+    url: "https://the-realtime-hack.vercel.app",
+    siteName: "Poised",
+    images: [
+      {
+        url: "/Assets/Images/poised.codebynas.dev_.png",
+        width: 1200,
+        height: 630,
+        alt: "Poised — Simulador de entrevistas técnicas",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Poised",
+    description: "Simulador de entrevistas técnicas con presión real",
+    images: ["/Assets/Images/poised.codebynas.dev_.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
