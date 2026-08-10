@@ -67,7 +67,32 @@ Skeleton: function isBalanced(str) {\n  // your code here\n}
 - Change topics without warning when you have enough information
 - Never say you are an AI
 - Tone: professional and direct, not overly friendly
-- Never repeat the same question`;
+- Never repeat the same question
+- IMPORTANT: Never use markdown formatting. No asterisks, no bold, no italics, no bullet points. Plain text only. Never add stage directions or actions in parentheses like (pausing) or (looking at notes). Speak naturally.
+- CRITICAL: When the session ends for ANY reason — the candidate says goodbye, wants to leave, feels unwell, asks to stop, the time is up, or you close it naturally — you MUST append the exact token [END] at the very end of your response, after your closing words. Example: "It was a pleasure. Take care. [END]". Do not add [END] in any other situation.
+
+{{LEVEL_BLOCK}}`;
+
+const LEVEL_BLOCK_EN: Record<string, string> = {
+  junior: `## Level: Junior
+- Ask more conceptual questions, avoid deep architecture dives
+- Be patient — if the candidate is stuck, give a small hint and move on
+- Focus on fundamentals: variables, functions, arrays, basic APIs, simple algorithms
+- Coding challenge: always pick Easy difficulty
+- Don't interrupt — let them think for a moment before nudging`,
+  mid: `## Level: Mid
+- Expect concrete answers with real examples from their experience
+- Push on architecture and design decisions: "why did you choose that approach?"
+- Cover: patterns, optimization, debugging, system design basics
+- Coding challenge: Easy or Medium based on how they answer conceptual questions
+- Interrupt once or twice if they go off-track`,
+  senior: `## Level: Senior
+- Ask about distributed systems, scalability, trade-offs, production failures
+- Very little patience — if an answer is vague, call it out immediately
+- Evaluate: technical leadership, architectural decisions, experience with incidents at scale
+- Coding challenge: always Medium or above; ask about time/space complexity unprompted
+- Interrupt more often — simulate a high-pressure environment`,
+};
 
 const SYSTEM_PROMPT = `Eres Ana, entrevistadora técnica senior en una empresa de software.
 Conduces entrevistas técnicas reales en español para posiciones de desarrollo mid-level.
@@ -136,7 +161,32 @@ Skeleton: function isBalanced(str) {\n  // tu código aquí\n}
 - Cambia de tema sin aviso cuando ya tienes suficiente información
 - Nunca digas que eres IA
 - Tono: profesional y directo, no amigable en exceso
-- Nunca repitas la misma pregunta`;
+- Nunca repitas la misma pregunta
+- IMPORTANTE: Nunca uses formato markdown. Sin asteriscos, sin negritas, sin cursivas, sin listas con viñetas. Solo texto plano. Nunca agregues indicaciones de escena entre paréntesis como (pausa) o (revisando notas). Habla de forma natural.
+- CRÍTICO: Cuando la sesión termina por CUALQUIER razón — el candidato se despide, quiere irse, no se siente bien, pide parar, se acaba el tiempo, o tú cierras naturalmente — DEBES agregar el token exacto [FIN] al final de tu respuesta, después de tus palabras de cierre. Ejemplo: "Fue un placer. Hasta pronto. [FIN]". No agregues [FIN] en ninguna otra situación.
+
+{{LEVEL_BLOCK}}`;
+
+const LEVEL_BLOCK_ES: Record<string, string> = {
+  junior: `## Nivel: Junior
+- Preguntas más conceptuales, sin profundidad en arquitectura
+- Sé paciente — si el candidato se traba, da una pista pequeña y avanza
+- Evalúa fundamentos: variables, funciones, arrays, APIs básicas, algoritmos simples
+- Challenge de código: siempre elige dificultad Fácil
+- No interrumpas — deja que piensen un momento antes de intervenir`,
+  mid: `## Nivel: Mid
+- Espera respuestas concretas con ejemplos reales de su experiencia
+- Presiona en decisiones de diseño: "¿por qué elegiste ese enfoque?"
+- Cubre: patrones, optimización, debugging, diseño de sistemas básico
+- Challenge de código: Fácil o Medio según cómo responde las preguntas conceptuales
+- Interrumpe una o dos veces si se desvía`,
+  senior: `## Nivel: Senior
+- Preguntas sobre sistemas distribuidos, escalabilidad, trade-offs, fallos en producción
+- Muy poca paciencia — si la respuesta es vaga, señálalo de inmediato
+- Evalúa: liderazgo técnico, decisiones de arquitectura, experiencia con incidentes a escala
+- Challenge de código: siempre Medio o superior; pregunta complejidad sin que lo pidan
+- Interrumpe con más frecuencia — simula un entorno de alta presión`,
+};
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -146,13 +196,23 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { message, history = [], config, lang } = body as {
+  const { message, history = [], config, lang, role } = body as {
     message: string;
     history: Array<{ role: "user" | "interviewer"; content: string }>;
     config?: { type?: string; level?: string; language?: string };
     lang?: "es" | "en";
+    role?: string;
   };
-  const systemPrompt = lang === "en" ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT;
+  const level = config?.level ?? "mid";
+  const levelBlock = lang === "en"
+    ? (LEVEL_BLOCK_EN[level] ?? LEVEL_BLOCK_EN.mid)
+    : (LEVEL_BLOCK_ES[level] ?? LEVEL_BLOCK_ES.mid);
+  const roleBlock = role?.trim()
+    ? `\n## Role context\nThe candidate is practicing for: ${role.trim()}\nTailor your questions specifically to this role and company context. Research what this type of company typically asks and focus on relevant technical areas.`
+    : "";
+
+  const basePrompt = lang === "en" ? SYSTEM_PROMPT_EN : SYSTEM_PROMPT;
+  const systemPrompt = basePrompt.replace("{{LEVEL_BLOCK}}", levelBlock + roleBlock);
 
   if (!message?.trim()) {
     return NextResponse.json({ error: "Missing message" }, { status: 400 });
@@ -191,12 +251,22 @@ export async function POST(req: NextRequest) {
   }
 
   const data = await res.json();
-  const response: string = data.choices?.[0]?.message?.content?.trim() ?? "";
+  const raw: string = data.choices?.[0]?.message?.content?.trim() ?? "";
 
-  if (!response) {
+  if (!raw) {
     console.error("[interview] Empty response from model", data);
     return NextResponse.json({ error: "Empty response from model" }, { status: 502 });
   }
+
+  const cleanResponse = (text: string) =>
+    text
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/\(.*?\)/g, "")
+      .replace(/#{1,6}\s/g, "")
+      .trim();
+
+  const response = cleanResponse(raw);
 
   // Only open editor when Ana explicitly gives a coding challenge
   const codeKeywords = /tienes el editor|pasemos a código|escribe una función|escribe el código|implementa una función|escribe un programa|you have the editor|let's do some coding|write a function|implement a function/i;
@@ -219,6 +289,12 @@ export async function POST(req: NextRequest) {
       starterCode = "// tu código aquí\n";
   }
 
-  console.log(`[interview] Response: ${response.slice(0, 80)}… showEditor=${showEditor}`);
-  return NextResponse.json({ response, showEditor, starterCode });
+  // Detect [END] / [FIN] token emitted by the model
+  const endToken = /\[(END|FIN)\]/i;
+  const endSession = endToken.test(response);
+  // Strip the token from what gets spoken
+  const finalResponse = response.replace(endToken, "").trim();
+
+  console.log(`[interview] Response: ${finalResponse.slice(0, 80)}… showEditor=${showEditor} endSession=${endSession}`);
+  return NextResponse.json({ response: finalResponse, showEditor, starterCode, endSession });
 }
