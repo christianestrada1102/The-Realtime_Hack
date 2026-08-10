@@ -671,7 +671,7 @@ export default function Home() {
             {[
               {
                 title: "Tu historial, tu curva",
-                stat: "∞ sesiones",
+                stat: "Cada sesión",
                 desc: "Cada entrevista queda guardada con su score, temas y código. Ves exactamente cómo evoluciona tu desempeño sesión a sesión.",
               },
               {
