@@ -97,7 +97,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
   const { lang, t } = useLang();
-  const [audioUnlocked, setAudioUnlocked] = useState(!isMobile);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
@@ -341,7 +341,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (startedRef.current) return;
     if (status !== "ready") return;
-    if (!audioUnlocked && !textMode) return;
+    if (!audioUnlocked && !textMode) return; // wait for user gesture on all browsers
     startedRef.current = true;
     setSessionStarted(true);
     startInterview();
@@ -431,7 +431,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
 
   // iOS requires audio to be triggered from a direct user gesture.
   // Show a tap gate on mobile so we can unlock the audio engine before starting.
-  if (isMobile && !audioUnlocked && !textMode) {
+  if (!audioUnlocked && !textMode) {
     return (
       <div style={{
         backgroundColor: "#0a0a0a", minHeight: "100vh",
