@@ -421,30 +421,17 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   // Show a tap gate on mobile so we can unlock the audio engine before starting.
   if (isMobile && !audioUnlocked) {
     return (
-      <div style={{
-        backgroundColor: "#0a0a0a", minHeight: "100vh",
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center", gap: 24,
-      }}>
-        <p style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: "#fff" }}>Poised</p>
-        <p style={{ fontFamily: "monospace", fontSize: 12, color: "#666", textAlign: "center", maxWidth: 260, lineHeight: 1.8 }}>
-          {t.tapToStart}
-        </p>
-        <button
-          onClick={() => {
-            unlockIOSAudio();
-            unlockAudio();
-            warmAudioContext();
-            setAudioUnlocked(true);
-          }}
-          style={{
-            fontFamily: "monospace", fontSize: 13, color: "#fff",
-            background: "none", border: "1px solid #333", borderRadius: 6,
-            padding: "14px 36px", cursor: "pointer",
-          }}
-        >
-          {t.begin}
-        </button>
+      <div
+        onClick={() => { unlockIOSAudio(); unlockAudio(); warmAudioContext(); setAudioUnlocked(true); }}
+        style={{
+          backgroundColor: "#0a0a0a", minHeight: "100vh", cursor: "pointer",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: 16,
+          userSelect: "none",
+        }}
+      >
+        <p style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: "#fff", margin: 0 }}>Poised</p>
+        <p style={{ fontFamily: "monospace", fontSize: 12, color: "#555", margin: 0 }}>{t.tapToStart}</p>
       </div>
     );
   }
