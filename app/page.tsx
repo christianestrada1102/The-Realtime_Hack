@@ -121,7 +121,8 @@ export default function Home() {
     const initGsap = async () => {
       const { gsap } = await import("gsap");
       const { ScrollTrigger } = await import("gsap/ScrollTrigger");
-      gsap.registerPlugin(ScrollTrigger);
+      const { ScrollToPlugin } = await import("gsap/ScrollToPlugin");
+      gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
 
       // Preload Globe chunk in background so it's ready when user scrolls to it
       import("@/components/originkit/globe").catch(() => {});
@@ -199,6 +200,29 @@ export default function Home() {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setModalOpen(false); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  // GSAP smooth scroll — faster and smoother than browser scroll-behavior: smooth
+  useEffect(() => {
+    const onClick = async (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest("a");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href?.startsWith("#")) return;
+      const target = document.querySelector(href);
+      if (!target) return;
+      e.preventDefault();
+      const { gsap } = await import("gsap");
+      const { ScrollToPlugin } = await import("gsap/ScrollToPlugin");
+      gsap.registerPlugin(ScrollToPlugin);
+      gsap.to(window, {
+        duration: 0.75,
+        scrollTo: { y: target, offsetY: 52 },
+        ease: "power3.inOut",
+      });
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
   }, []);
 
   useEffect(() => {
@@ -860,7 +884,6 @@ export default function Home() {
         </footer>
 
         <style>{`
-          html { scroll-behavior: smooth; }
           @keyframes modal-bg-in {
             from { opacity: 0; }
             to   { opacity: 1; }
