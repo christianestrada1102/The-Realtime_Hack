@@ -233,7 +233,7 @@ The source code in this repository is made publicly available for **viewing and 
 
 Any use beyond reading the code requires **explicit written permission** from the author.
 
-For licensing inquiries: christianestrada773@gmail.com
+For licensing inquiries: christianestrada1102.dev@gmail.com
 
 ---
 
