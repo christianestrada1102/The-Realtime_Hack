@@ -32,14 +32,20 @@ Construido para [The Realtime Hackathon 2026](https://www.realtimehackathon.com/
 
 | Feature | Description |
 |---|---|
-| 🎙️ **Voz en tiempo real** | Ana responde con voz sintetizada via OpenRouter TTS — latencia mínima por streaming |
-| 🧠 **Entrevistador con memoria** | Claude Haiku mantiene el historial completo de la conversación y escala la dificultad |
-| 📝 **Transcripción automática** | Whisper STT transcribe tu voz y la muestra en el panel lateral |
+| 🎙️ **Voz en tiempo real** | Ana responde con voz sintetizada via ElevenLabs TTS — latencia mínima por streaming |
+| 🧠 **Entrevistador con memoria** | Claude Haiku mantiene el historial completo de la conversación y adapta la dificultad |
+| 📝 **Transcripción automática** | Whisper STT transcribe tu voz; idioma pasado al modelo para mayor precisión |
 | 💻 **Editor de código integrado** | CodeMirror 6 aparece automáticamente cuando Ana pide que implementes algo |
 | ⏱️ **Timer con aviso** | Sesión configurable (15–60 min), avisa a los 5 minutos restantes |
 | 🌐 **Canal Portal** | Comunicación en tiempo real entre Entrevistador y Observador via Portal SDK |
 | 🎨 **Landing con WebGL** | Globe (Three.js) y ChromaticWaves (OGL) con lazy load y `memo()` anti-re-mount |
-| 📊 **Feedback al terminar** | Pantalla de resumen con fortalezas y áreas de mejora generadas por IA |
+| 📊 **Historial y Feedback** | Pantalla de resumen con fortalezas, áreas de mejora e historial de sesiones anteriores |
+| 🌍 **Bilingüe ES/EN** | Toggle de idioma en navbar — UI completa y prompt de Ana en español o inglés |
+| 🎯 **Niveles Junior/Mid/Senior** | System prompt adaptado por nivel; Ana ajusta preguntas y criterio de evaluación |
+| 💼 **Contexto de rol** | Campo libre para especificar el rol (ej. "Backend Engineer en fintech") |
+| 🔇 **Detección de silencio** | Tras 3 silencios consecutivos Ana cierra la sesión educadamente |
+| ⌨️ **Modo texto** | `Ctrl+X` activa text mode — sin voz, solo teclado — para pruebas rápidas en local |
+| 📈 **Analytics** | Umami integrado via variable de entorno para métricas de uso en producción |
 
 ---
 
@@ -66,9 +72,11 @@ CodeMirror 6       — Editor de código en sesión
 ### Backend (API Routes — Next.js)
 
 ```
-OpenRouter API     — LLM (claude-haiku-4-5), TTS (x-ai/grok-voice-tts-1.0, voz Eve)
-Whisper STT        — Transcripción de audio vía OpenRouter
+OpenRouter API     — LLM (claude-haiku-4-5), STT (Whisper)
+ElevenLabs API     — TTS (voz Eve, streaming)
 Portal SDK         — Canal en tiempo real (channelId por sesión)
+Neon (PostgreSQL)  — Historial de sesiones via Drizzle ORM
+Umami              — Analytics de uso (opt-in via env var)
 ```
 
 ### Arquitectura en tiempo real
@@ -112,8 +120,11 @@ Tú (micrófono)
 │   ├── useVoiceRecorder.ts       # Hook: grabación de audio con MediaRecorder
 │   ├── useAudioPlayer.ts         # Hook: reproducción de audio TTS
 │   ├── useSilenceDetector.ts     # Hook: detección de silencio para auto-stop
+│   ├── useIsMobile.ts            # Hook: breakpoints mobile/tablet/desktop
+│   ├── LangContext.tsx           # React Context para toggle ES/EN
+│   ├── i18n.ts                   # Traducciones completas ES/EN (as const)
 │   ├── portal.ts                 # Configuración cliente Portal SDK
-│   └── types.ts                  # Tipos compartidos
+│   └── db/                       # Drizzle ORM — schema y queries historial
 │
 ├── public/Assets/Fonts/
 │   └── ManuscribeFree-Regular.otf  # Fuente display de marca
@@ -131,10 +142,12 @@ La sesión funciona así paso a paso:
 
 1. Se crea un `sessionId` único vía `/api/session/create`
 2. Portal SDK abre un canal `session-{id}` compartido entre cliente y servidor
-3. Ana saluda con LLM → texto → TTS → audio en el browser
+3. Ana saluda con LLM → texto → TTS (ElevenLabs) → audio en el browser
 4. Silencio detectado → MediaRecorder para → Whisper transcribe → texto a LLM → ciclo
 5. Si la respuesta de Ana contiene keywords de código (`implementa`, `SQL`, `componente`...), el editor aparece automáticamente
-6. Al terminar (timer o botón): `/api/feedback` genera el resumen de la sesión
+6. Si el usuario no responde 3 veces seguidas → Ana cierra educadamente
+7. Ana detecta despedida verbal y responde con token `[FIN]`/`[END]` → cierre determinístico
+8. Al terminar (timer, botón o despedida): `/api/feedback` genera el resumen; sesión guardada en BD
 
 ---
 
@@ -158,7 +171,12 @@ Crea `.env.local` en la raíz:
 
 ```env
 OPENROUTER_API_KEY=sk-or-...
-NEXT_PUBLIC_PORTAL_API_KEY=pk_...
+NEXT_PUBLIC_PORTAL_KEY=pk_...
+PORTAL_SECRET=sk_...
+PORTAL_ENV_ID=env_...
+ELEVENLABS_API_KEY=sk_...
+DATABASE_URL=postgresql://...
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=          # opcional — analytics
 ```
 
 ```bash
@@ -192,7 +210,12 @@ Abre [http://localhost:3000](http://localhost:3000).
 
 ```
 OPENROUTER_API_KEY
-NEXT_PUBLIC_PORTAL_API_KEY
+NEXT_PUBLIC_PORTAL_KEY
+PORTAL_SECRET
+PORTAL_ENV_ID
+ELEVENLABS_API_KEY
+DATABASE_URL
+NEXT_PUBLIC_UMAMI_WEBSITE_ID   # opcional
 ```
 
 ---
