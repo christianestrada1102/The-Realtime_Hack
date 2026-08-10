@@ -94,6 +94,7 @@ export default function Home() {
   const [loadingVisible, setLoadingVisible] = useState(true);
   const [navVisible, setNavVisible] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const loadingRef = useRef<HTMLDivElement>(null);
 
   const heroSentinelRef = useRef<HTMLDivElement>(null);
@@ -280,69 +281,154 @@ export default function Home() {
           Poised
         </span>
 
-        <div style={{ display: isMobile ? "none" : "flex", alignItems: "center", gap: 32 }}>
-          {[
-            { label: "El problema",   href: "#problema", id: "problema" },
-            { label: "Cómo funciona", href: "#como",     id: "como" },
-            { label: "Arquitectura",  href: "#arch",     id: "arch" },
-          ].map(({ label, href, id }) => {
-            const isActive = activeSection === id;
-            return (
+        {/* Desktop links */}
+        {!isMobile && (
+          <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+            {[
+              { label: "El problema",   href: "#problema", id: "problema" },
+              { label: "Cómo funciona", href: "#como",     id: "como" },
+              { label: "Arquitectura",  href: "#arch",     id: "arch" },
+            ].map(({ label, href, id }) => {
+              const isActive = activeSection === id;
+              return (
+                <a
+                  key={href}
+                  href={href}
+                  style={{
+                    fontFamily: "monospace", fontSize: 11,
+                    color: isActive ? C.white : C.low,
+                    textDecoration: "none", transition: "color 0.2s",
+                    display: "flex", flexDirection: "column", gap: 3,
+                    paddingBottom: 2,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = C.white)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = isActive ? C.white : C.low)}
+                >
+                  {label}
+                  <span style={{
+                    display: "block", height: 1, backgroundColor: C.white,
+                    width: isActive ? "100%" : "0%",
+                    transition: "width 300ms ease-out",
+                  }} />
+                </a>
+              );
+            })}
+            <a
+              href="/historial"
+              style={{
+                fontFamily: "monospace", fontSize: 11, color: C.low,
+                textDecoration: "none", transition: "color 0.2s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = C.white)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = C.low)}
+            >
+              Historial
+            </a>
+          </div>
+        )}
+
+        {/* Desktop CTA / Mobile hamburger */}
+        {isMobile ? (
+          <button
+            onClick={() => setMobileMenuOpen((o) => !o)}
+            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              display: "flex", flexDirection: "column", justifyContent: "center",
+              gap: 5, padding: 4, width: 28, height: 28,
+            }}
+          >
+            {mobileMenuOpen ? (
+              /* X */
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <line x1="1" y1="1" x2="17" y2="17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="17" y1="1" x2="1" y2="17" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            ) : (
+              /* Hamburger */
+              <>
+                <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
+                <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
+                <span style={{ display: "block", height: 1.5, width: 18, backgroundColor: C.white, borderRadius: 1 }} />
+              </>
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={() => setModalOpen(true)}
+            style={{
+              background: "none", border: "1px solid #333", borderRadius: 4,
+              color: C.white, fontFamily: "monospace", fontSize: 11,
+              padding: "8px 20px", cursor: "pointer",
+              transition: "background 300ms ease, color 300ms ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = C.white;
+              e.currentTarget.style.color = "#000";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "none";
+              e.currentTarget.style.color = C.white;
+            }}
+          >
+            Iniciar entrevista
+          </button>
+        )}
+      </nav>
+
+      {/* ── Mobile dropdown menu ── */}
+      {isMobile && mobileMenuOpen && (
+        <>
+          {/* Overlay to close */}
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 48 }}
+          />
+          <div style={{
+            position: "fixed", top: 52, left: 0, right: 0, zIndex: 49,
+            backgroundColor: "#0f0f0f",
+            borderBottom: "1px solid #1a1a1a",
+            display: "flex", flexDirection: "column",
+            animation: "slideDown 200ms ease",
+            overflow: "hidden",
+          }}>
+            {[
+              { label: "Historial",     href: "/historial", external: true },
+              { label: "El problema",   href: "#problema",  external: false },
+              { label: "Cómo funciona", href: "#como",      external: false },
+              { label: "Arquitectura",  href: "#arch",      external: false },
+            ].map(({ label, href, external }) => (
               <a
                 key={href}
                 href={href}
+                onClick={() => setMobileMenuOpen(false)}
                 style={{
-                  fontFamily: "monospace", fontSize: 11,
-                  color: isActive ? C.white : C.low,
-                  textDecoration: "none", transition: "color 0.2s",
-                  display: "flex", flexDirection: "column", gap: 3,
-                  paddingBottom: 2,
+                  fontFamily: "monospace", fontSize: 13, color: C.mid,
+                  textDecoration: "none", padding: "18px 24px",
+                  borderBottom: "1px solid #1a1a1a",
+                  transition: "color 150ms",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = C.white)}
-                onMouseLeave={(e) => (e.currentTarget.style.color = isActive ? C.white : C.low)}
+                onMouseLeave={(e) => (e.currentTarget.style.color = C.mid)}
               >
                 {label}
-                <span style={{
-                  display: "block", height: 1, backgroundColor: C.white,
-                  width: isActive ? "100%" : "0%",
-                  transition: "width 300ms ease-out",
-                }} />
               </a>
-            );
-          })}
-          <a
-            href="/historial"
-            style={{
-              fontFamily: "monospace", fontSize: 11, color: C.low,
-              textDecoration: "none", transition: "color 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = C.white)}
-            onMouseLeave={(e) => (e.currentTarget.style.color = C.low)}
-          >
-            Historial
-          </a>
-        </div>
-
-        <button
-          onClick={() => setModalOpen(true)}
-          style={{
-            background: "none", border: "1px solid #333", borderRadius: 4,
-            color: C.white, fontFamily: "monospace", fontSize: 11,
-            padding: "8px 20px", cursor: "pointer",
-            transition: "background 300ms ease, color 300ms ease",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = C.white;
-            e.currentTarget.style.color = "#000";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "none";
-            e.currentTarget.style.color = C.white;
-          }}
-        >
-          Iniciar entrevista
-        </button>
-      </nav>
+            ))}
+            <div style={{ padding: "16px 24px" }}>
+              <button
+                onClick={() => { setMobileMenuOpen(false); setModalOpen(true); }}
+                style={{
+                  width: "100%", background: C.white, border: "none", borderRadius: 4,
+                  color: "#000", fontFamily: "monospace", fontSize: 13,
+                  padding: "14px", cursor: "pointer",
+                }}
+              >
+                Iniciar entrevista
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <main style={{ backgroundColor: "#0a0a0a", color: C.white, opacity: loadingVisible ? 0 : 1, transition: "opacity 0.3s ease" }}>
 
@@ -735,6 +821,10 @@ export default function Home() {
           @keyframes progress-fill {
             from { width: 0%; }
             to   { width: 100%; }
+          }
+          @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
           }
           @keyframes portal-pulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
