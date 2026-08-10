@@ -30,6 +30,9 @@ export const metadata: Metadata = {
     description: "Simulador de entrevistas técnicas con presión real",
     images: ["/og-image.png"],
   },
+  other: {
+    "fb:app_id": "000000000000000",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
