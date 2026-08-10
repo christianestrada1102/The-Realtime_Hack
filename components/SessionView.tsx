@@ -59,7 +59,7 @@ const NOISE_BG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/s
 export function SessionView({ sessionId }: { sessionId: string }) {
   const channelId = `session-${sessionId}`;
   const { send, status } = useChannel<ChatContent>({ channelId });
-  const { startRecording, stopRecording, cancelRecording } = useVoiceRecorder();
+  const { startRecording, stopRecording, cancelRecording, getRecordingExt } = useVoiceRecorder();
   const { speak, stop: stopAudio, unlockAudio } = useAudioPlayer();
   const { startDetecting, stopDetecting, warmAudioContext } = useSilenceDetector();
 
@@ -230,7 +230,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   async function processUserAudio(blob: Blob) {
     setWaveformBars([4, 4, 4, 4, 4]);
     const form = new FormData();
-    form.append("audio", blob, "audio.webm");
+    form.append("audio", blob, `audio.${getRecordingExt()}`);
     form.append("lang", lang);
     const res = await fetch("/api/transcribe", { method: "POST", body: form });
     const data = await res.json();
