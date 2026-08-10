@@ -11,6 +11,7 @@ export async function GET() {
         createdAt: sessions.createdAt,
         score: sessions.score,
         duration: sessions.duration,
+        feedback: sessions.feedback,
       })
       .from(sessions)
       .orderBy(desc(sessions.createdAt));

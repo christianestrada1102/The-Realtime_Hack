@@ -9,6 +9,7 @@ type SessionRow = {
   createdAt: string;
   score: number | null;
   duration: number | null;
+  feedback?: { summary?: string } | null;
 };
 
 type SessionDetail = SessionRow & {
@@ -65,6 +66,35 @@ export default function HistorialPage() {
   const topicColor = (level: "strong" | "medium" | "weak") =>
     level === "strong" ? C.white : level === "weak" ? "#ef4444" : C.dim;
 
+  // Stats derived from sessions (newest-first order from API)
+  const withScore = sessions.filter((s) => s.score != null);
+  const totalCount = sessions.length;
+  const bestScore = withScore.length ? Math.max(...withScore.map((s) => s.score!)) : null;
+  const avgScore = withScore.length
+    ? withScore.reduce((a, s) => a + s.score!, 0) / withScore.length
+    : null;
+  const newestScore = withScore[0]?.score ?? null;
+  const oldestScore = withScore[withScore.length - 1]?.score ?? null;
+  const trend =
+    withScore.length < 2
+      ? "→ estable"
+      : newestScore! > oldestScore!
+      ? "↑ mejorando"
+      : newestScore! < oldestScore!
+      ? "↓ bajando"
+      : "→ estable";
+  const trendColor =
+    trend.startsWith("↑") ? C.white : trend.startsWith("↓") ? "#ef4444" : "#555";
+
+  const StatBlock = ({ value, label }: { value: string; label: string }) => (
+    <div style={{ flex: 1, textAlign: "center", padding: "0 8px" }}>
+      <p style={{ fontFamily: "Manuscribe, serif", fontSize: 32, color: C.white, margin: "0 0 6px", lineHeight: 1 }}>
+        {value}
+      </p>
+      <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>{label}</p>
+    </div>
+  );
+
   return (
     <div style={{ backgroundColor: C.bg, minHeight: "100vh", color: C.white }}>
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "64px 24px 80px" }}>
@@ -80,6 +110,28 @@ export default function HistorialPage() {
         <p style={{ fontFamily: "monospace", fontSize: 11, color: "#555", margin: "0 0 48px", letterSpacing: "0.06em" }}>
           historial de sesiones
         </p>
+
+        {/* Stats */}
+        {!loading && sessions.length > 0 && (
+          <div style={{
+            display: "flex", alignItems: "stretch",
+            borderTop: `1px solid #1a1a1a`, borderBottom: `1px solid #1a1a1a`,
+            margin: "0 0 48px", padding: "24px 0",
+          }}>
+            <StatBlock value={String(totalCount)} label="entrevistas" />
+            <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
+            <StatBlock value={bestScore != null ? bestScore.toFixed(1) : "—"} label="mejor score" />
+            <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
+            <StatBlock value={avgScore != null ? avgScore.toFixed(1) : "—"} label="promedio" />
+            <div style={{ width: 1, background: "#1a1a1a", flexShrink: 0 }} />
+            <div style={{ flex: 1, textAlign: "center", padding: "0 8px" }}>
+              <p style={{ fontFamily: "monospace", fontSize: 18, color: trendColor, margin: "0 0 6px", lineHeight: 1.6 }}>
+                {trend}
+              </p>
+              <p style={{ fontFamily: "monospace", fontSize: 10, color: "#555", margin: 0 }}>tendencia</p>
+            </div>
+          </div>
+        )}
 
         {/* List */}
         {loading && (
@@ -103,17 +155,28 @@ export default function HistorialPage() {
                 display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
               }}
             >
-              <div style={{ display: "flex", alignItems: "baseline", gap: 20 }}>
-                <span style={{ fontFamily: "Manuscribe, serif", fontSize: 32, color: C.white, lineHeight: 1 }}>
-                  {s.score ?? "—"}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 20, flex: 1, minWidth: 0 }}>
+                <span style={{ fontFamily: "Manuscribe, serif", fontSize: 32, color: C.white, lineHeight: 1, flexShrink: 0 }}>
+                  {s.score != null ? s.score.toFixed(1) : "—"}
                 </span>
-                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  <span style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>
-                    {s.createdAt ? formatDate(s.createdAt) : "—"}
-                  </span>
-                  <span style={{ fontFamily: "monospace", fontSize: 11, color: C.dim }}>
-                    {formatDuration(s.duration)}
-                  </span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
+                    <span style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>
+                      {s.createdAt ? formatDate(s.createdAt) : "—"}
+                    </span>
+                    <span style={{ fontFamily: "monospace", fontSize: 11, color: C.dim }}>
+                      {formatDuration(s.duration)}
+                    </span>
+                  </div>
+                  {s.feedback?.summary && (
+                    <span style={{
+                      fontFamily: "monospace", fontSize: 11, color: "#555",
+                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                      maxWidth: "100%",
+                    }}>
+                      {s.feedback.summary}
+                    </span>
+                  )}
                 </div>
               </div>
               <button
