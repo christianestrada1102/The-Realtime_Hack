@@ -50,6 +50,13 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     setTotalSeconds((isNaN(dur) ? 45 : dur) * 60);
   }, []);
 
+  // Guard: if this session was already completed, don't let it restart
+  useEffect(() => {
+    if (localStorage.getItem(`session-ended-${sessionId}`) === "true") {
+      setAlreadyEnded(true);
+    }
+  }, [sessionId]);
+
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [lastInterviewerMsg, setLastInterviewerMsg] = useState("");
@@ -71,6 +78,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const startedRef = useRef(false);
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [alreadyEnded, setAlreadyEnded] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const startListeningRef = useRef<() => void>(() => {});
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -111,6 +119,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         speak(closing, () => {
           stopDetecting();
           cancelRecording();
+          localStorage.setItem(`session-ended-${sessionId}`, "true");
           setPhase("ended");
           setShowFeedback(true);
         });
@@ -284,11 +293,44 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   function cancelLeave() { setPendingNavigation(null); }
   function handleEnd() {
     stopDetecting(); cancelRecording();
+    localStorage.setItem(`session-ended-${sessionId}`, "true");
     setPhase("ended"); setShowFeedback(true);
   }
 
   const isSpeaking = phase === "speaking";
   const isListening = phase === "listening";
+
+  if (alreadyEnded) return (
+    <div style={{
+      backgroundColor: "#0a0a0a", minHeight: "100vh", color: "#fff",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 24,
+    }}>
+      <p style={{ fontFamily: "Manuscribe, serif", fontSize: 28, color: "#fff", margin: 0 }}>Poised</p>
+      <p style={{ fontFamily: "monospace", fontSize: 13, color: "#555", margin: 0 }}>Esta sesión ya terminó.</p>
+      <div style={{ display: "flex", gap: 16 }}>
+        <button
+          onClick={() => router.push("/historial")}
+          style={{
+            background: "none", border: "1px solid #333", borderRadius: 6,
+            color: "#fff", fontFamily: "monospace", fontSize: 12,
+            padding: "10px 20px", cursor: "pointer",
+          }}
+        >
+          Ver historial
+        </button>
+        <button
+          onClick={() => router.push("/")}
+          style={{
+            background: "none", border: "1px solid #333", borderRadius: 6,
+            color: "#888", fontFamily: "monospace", fontSize: 12,
+            padding: "10px 20px", cursor: "pointer",
+          }}
+        >
+          Nueva entrevista
+        </button>
+      </div>
+    </div>
+  );
 
   if (showFeedback) return <FeedbackScreen history={historyRef.current} duration={totalSeconds} />;
 
