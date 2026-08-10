@@ -74,6 +74,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     const lvl = params.get("level") ?? "mid";
     setLevel(["junior", "mid", "senior"].includes(lvl) ? (lvl as Level) : "mid");
     setRole(params.get("role") ?? "");
+    // Desktop doesn't need the tap-gate — unlock immediately.
+    // Mobile (isMobile becomes true after useBreakpoint's effect, but we check window directly
+    // here to avoid the race where isMobile is still false on first render).
+    if (window.innerWidth >= 768) setAudioUnlocked(true);
   }, []);
 
   // Guard: if this session was already completed, don't let it restart
@@ -97,7 +101,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const bp = useBreakpoint();
   const isMobile = bp === "mobile";
   const { lang, t } = useLang();
-  const [audioUnlocked, setAudioUnlocked] = useState(!isMobile);
+  // Start locked on all devices — useEffect below unlocks desktop immediately.
+  // This prevents the race where useBreakpoint starts as "desktop" (SSR default)
+  // so isMobile=false on first render → audioUnlocked=true on mobile, skipping the tap gate.
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
   const warned5MinRef = useRef(false);
   const timeUpRef = useRef(false);
@@ -350,7 +357,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     startedRef.current = true;
     setSessionStarted(true);
     startInterview();
-  }, [status, audioUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status, audioUnlocked, textMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!sessionStarted || phase === "ended") return;
