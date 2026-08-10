@@ -63,20 +63,17 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   const { speak, stop: stopAudio, unlockAudio } = useAudioPlayer();
   const { startDetecting, stopDetecting, warmAudioContext } = useSilenceDetector();
 
-  const [textMode, setTextMode] = useState(false);
-  const [textInput, setTextInput] = useState("");
   const [totalSeconds, setTotalSeconds] = useState(2700);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setTextMode(params.get("mode") === "text");
     const dur = parseInt(params.get("duration") ?? "45", 10);
     setTotalSeconds((isNaN(dur) ? 45 : dur) * 60);
     const lvl = params.get("level") ?? "mid";
     setLevel(["junior", "mid", "senior"].includes(lvl) ? (lvl as Level) : "mid");
     setRole(params.get("role") ?? "");
     // Desktop doesn't need the tap-gate — unlock immediately.
-    // Mobile (isMobile becomes true after useBreakpoint's effect, but we check window directly
-    // here to avoid the race where isMobile is still false on first render).
+    // Use window.innerWidth directly to avoid the race where useBreakpoint
+    // initializes as "desktop" (SSR default), making isMobile=false on first render.
     if (window.innerWidth >= 768) setAudioUnlocked(true);
   }, []);
 
@@ -215,18 +212,10 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       if (iData.endSession) {
         sessionActiveRef.current = false;
         localStorage.setItem(`session-ended-${sessionId}`, "true");
-        if (textMode) {
-          setPhase("ended");
-          await playEndTone();
-          setShowFeedback(true);
-        } else {
-          setPhase("speaking");
-          speak(reply, () => {
-            playEndTone().then(() => { setPhase("ended"); setShowFeedback(true); });
-          });
-        }
-      } else if (textMode) {
-        setPhase("idle");
+        setPhase("speaking");
+        speak(reply, () => {
+          playEndTone().then(() => { setPhase("ended"); setShowFeedback(true); });
+        });
       } else {
         setPhase("speaking");
         speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
@@ -311,16 +300,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
     );
   }
 
-  startListeningRef.current = textMode ? () => setPhase("idle") : startListening;
-
-  async function handleTextSubmit() {
-    const text = textInput.trim();
-    if (!text || phase === "processing" || phase === "speaking") return;
-    setTextInput("");
-    await send({ content: { text, role: "user" } });
-    appendHistory({ role: "user", content: text });
-    await callInterviewer(text);
-  }
+  startListeningRef.current = startListening;
 
   async function startInterview() {
     setPhase("processing");
@@ -339,12 +319,8 @@ export function SessionView({ sessionId }: { sessionId: string }) {
       setHistoryDisplay(historyRef.current);
       setLastInterviewerMsg(reply);
       setMsgKey(1);
-      if (textMode) {
-        setPhase("idle");
-      } else {
-        setPhase("speaking");
-        speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
-      }
+      setPhase("speaking");
+      speak(reply, () => { if (sessionActiveRef.current) startListeningRef.current(); });
     } catch {
       setError("Error al iniciar entrevista"); setPhase("idle");
     }
@@ -353,11 +329,11 @@ export function SessionView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (startedRef.current) return;
     if (status !== "ready") return;
-    if (!audioUnlocked && !textMode) return;
+    if (!audioUnlocked) return;
     startedRef.current = true;
     setSessionStarted(true);
     startInterview();
-  }, [status, audioUnlocked, textMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status, audioUnlocked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!sessionStarted || phase === "ended") return;
@@ -443,7 +419,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
 
   // iOS requires audio to be triggered from a direct user gesture.
   // Show a tap gate on mobile so we can unlock the audio engine before starting.
-  if (isMobile && !audioUnlocked && !textMode) {
+  if (isMobile && !audioUnlocked) {
     return (
       <div style={{
         backgroundColor: "#0a0a0a", minHeight: "100vh",
@@ -671,36 +647,7 @@ export function SessionView({ sessionId }: { sessionId: string }) {
         padding: "0 24px", position: "relative",
       }}>
 
-        {textMode && !showEditor ? (
-          <div style={{ width: "100%", maxWidth: 560, display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="text"
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleTextSubmit(); }}
-              placeholder={t.writeAnswer}
-              disabled={phase === "processing" || phase === "speaking" || phase === "ended"}
-              style={{
-                flex: 1, backgroundColor: "#111", border: "1px solid #333",
-                borderRadius: 6, color: "#fff", fontFamily: "monospace",
-                fontSize: 13, padding: "8px 12px", outline: "none",
-              }}
-            />
-            <button
-              onClick={handleTextSubmit}
-              disabled={phase === "processing" || phase === "speaking" || phase === "ended"}
-              style={{
-                fontFamily: "monospace", fontSize: 11, color: "#555",
-                background: "none", border: "1px solid #333", borderRadius: 6,
-                padding: "8px 12px", cursor: "pointer", flexShrink: 0,
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#aaa")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#555")}
-            >
-              {t.send}
-            </button>
-          </div>
-        ) : showEditor ? (
+        {showEditor ? (
           <div style={{
             width: "100%", maxWidth: 640,
             border: "1px solid #222",

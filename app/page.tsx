@@ -108,15 +108,6 @@ export default function Home() {
   const [duration, setDuration] = useState(45);
   const [level, setLevel] = useState("mid");
   const [role, setRole] = useState("");
-  const [textMode, setTextMode] = useState(false);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "x") { e.preventDefault(); setTextMode((v) => !v); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
   const [modalOpen, setModalOpen] = useState(false);
   const [loadingVisible, setLoadingVisible] = useState(true);
   const [navVisible, setNavVisible] = useState(false);
@@ -290,7 +281,6 @@ export default function Home() {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const params = new URLSearchParams({ duration: String(duration), level });
     if (role.trim()) params.set("role", role.trim());
-    if (textMode) params.set("mode", "text");
     router.push(`/session/${id}?${params.toString()}`);
   }
 
@@ -1045,7 +1035,7 @@ export default function Home() {
               onMouseEnter={(e) => (e.currentTarget.style.background = "#e4e4e7")}
               onMouseLeave={(e) => (e.currentTarget.style.background = C.white)}
             >
-              {t.startSession}{textMode ? " [TEXT]" : ""}
+              {t.startSession}
             </button>
           </div>
         </div>
