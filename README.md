@@ -9,7 +9,7 @@
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS_v4-38B2AC?style=flat&logo=tailwind-css&logoColor=white)
 ![GSAP](https://img.shields.io/badge/GSAP-88CE02?style=flat&logo=greensock&logoColor=black)
 ![Three.js](https://img.shields.io/badge/Three.js-000000?style=flat&logo=three.js&logoColor=white)
-![MIT License](https://img.shields.io/badge/license-MIT-green?style=flat)
+![License](https://img.shields.io/badge/license-Proprietary-red?style=flat)
 ![Estado](https://img.shields.io/badge/Estado-En_Desarrollo-f59e0b?style=flat)
 
 [Live Demo](https://the-realtime-hack.vercel.app) · [Reportar Bug](https://github.com/christianestrada1102/The-Realtime_Hack/issues)
@@ -222,29 +222,18 @@ NEXT_PUBLIC_UMAMI_WEBSITE_ID   # opcional
 
 ## License
 
-```
-MIT License
+Copyright (c) 2026 Christian Estrada (CodeByNas). All rights reserved.
 
-Copyright (c) 2026 Christian Estrada (CodeByNas)
+The source code in this repository is made publicly available for **viewing and educational purposes only**. No permission is granted to:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+- Copy, modify, or distribute this code
+- Use it in whole or in part in any personal, academic, or commercial project
+- Deploy it as a product or service
+- Sublicense or sell it
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Any use beyond reading the code requires **explicit written permission** from the author.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+For licensing inquiries: christianestrada773@gmail.com
 
 ---
 
@@ -260,5 +249,5 @@ Chihuahua, Mexico
 ---
 
 <div align="center">
-  <p><sub>© 2026 CodeByNas · MIT License</sub></p>
+  <p><sub>© 2026 CodeByNas · All Rights Reserved</sub></p>
 </div>
