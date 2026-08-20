@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getIP } from "@/lib/rateLimit";
 
 const SYSTEM_PROMPT_EN = `You are Ana, a senior technical interviewer at a software company.
 You conduct real technical interviews in English for mid-level development positions.
@@ -203,6 +204,10 @@ const LEVEL_BLOCK_ES: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
+  if (!rateLimit(getIP(req), { max: 60, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     console.error("[interview] OPENROUTER_API_KEY not configured");

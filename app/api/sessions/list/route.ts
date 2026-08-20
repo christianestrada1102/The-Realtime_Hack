@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sessions } from "@/lib/db/schema";
 import { desc } from "drizzle-orm";
+import { checkAdminSecret } from "@/lib/adminAuth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const deny = checkAdminSecret(req);
+  if (deny) return deny;
+
   try {
     const rows = await db
       .select({

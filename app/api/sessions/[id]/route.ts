@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sessions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { checkAdminSecret } from "@/lib/adminAuth";
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const deny = checkAdminSecret(req);
+  if (deny) return deny;
+
   const { id } = await params;
   try {
     const rows = await db.select().from(sessions).where(eq(sessions.id, id));

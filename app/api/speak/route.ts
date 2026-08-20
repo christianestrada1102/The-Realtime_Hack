@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit, getIP } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
+  if (!rateLimit(getIP(req), { max: 60, windowMs: 60_000 })) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 500 });
