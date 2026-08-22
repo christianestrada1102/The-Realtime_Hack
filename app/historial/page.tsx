@@ -6,7 +6,7 @@ import { HistorialClient } from "./HistorialClient";
 export const dynamic = "force-dynamic";
 
 export default async function HistorialPage() {
-  const rows = await db
+  const raw = await db
     .select({
       id: sessions.id,
       createdAt: sessions.createdAt,
@@ -17,6 +17,12 @@ export default async function HistorialPage() {
     .from(sessions)
     .orderBy(desc(sessions.createdAt))
     .catch(() => []);
+
+  const rows = raw.map((r) => ({
+    ...r,
+    createdAt: r.createdAt ? r.createdAt.toISOString() : "",
+    feedback: r.feedback as { summary?: string } | null,
+  }));
 
   return <HistorialClient initialSessions={rows} />;
 }
