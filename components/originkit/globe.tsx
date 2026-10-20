@@ -190,15 +190,20 @@ interface GlobeProps {
     style?: CSSProperties;
 }
 
+// Module-level defaults: inline object defaults create a new reference every
+// render, which re-triggers the scene effect and leaks WebGL contexts.
+const DEFAULT_DOTS = { color: "#ffffff", size: 5, density: 8, allDots: false };
+const DEFAULT_MARKER_CONFIG = { markers: [], color: "#00f7ff", size: 40 };
+
 export default function Globe({
     speed = 2,
     smoothing = 8,
-    dots = { color: "#ffffff", size: 5, density: 8, allDots: false },
+    dots = DEFAULT_DOTS,
     fill = "dots",
     fillColor = "#ffffff",
     scale = 8,
     stopOnHover = true,
-    markerConfig = { markers: [], color: "#00f7ff", size: 40 },
+    markerConfig = DEFAULT_MARKER_CONFIG,
     direction = "left",
     initialLatitude = 23,
     initialLongitude = -23,
@@ -213,7 +218,6 @@ export default function Globe({
     style,
 }: GlobeProps) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const dotColor = dots.color;
@@ -441,7 +445,6 @@ export default function Globe({
 
         const loadWorldData = async () => {
             try {
-                setIsLoading(true);
                 const response = await fetch("/ne_110m_land.json");
                 if (!response.ok) throw new Error("Failed to load land data");
                 const landFeatures = await response.json();
@@ -705,10 +708,8 @@ export default function Globe({
                 renderer.render(scene, camera);
                 canvas.style.opacity = "1";
                 canvas.style.visibility = "visible";
-                setIsLoading(false);
             } catch (err) {
                 setError("Failed to load land map data");
-                setIsLoading(false);
             }
         };
 
@@ -916,12 +917,12 @@ export default function Globe({
             canvas.removeEventListener("mousemove", handleMouseMove);
             resizeObserver.disconnect();
             renderer.dispose();
+            renderer.forceContextLoss();
             container.removeChild(canvas);
         };
     }, [
         speed,
         smoothing,
-        dots,
         fill,
         fillColor,
         allDots,
@@ -930,7 +931,8 @@ export default function Globe({
         dotColor,
         scale,
         stopOnHover,
-        markerConfig,
+        markerConfig.markers,
+        markerConfig.color,
         direction,
         initialLatitude,
         initialLongitude,
